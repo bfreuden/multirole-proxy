@@ -1,9 +1,6 @@
 package com.kairntech.multiroleproxy.local;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
+import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpContentDecompressor;
@@ -15,17 +12,19 @@ public class LocalProxyChannelInitializer extends ChannelInitializer<SocketChann
 
     private final SslContext sslCtx;
     private final Consumer<Channel> registrationCompleteCallback;
+    private final EventLoopGroup group;
 
-    public LocalProxyChannelInitializer(SslContext sslCtx, Consumer<Channel> registrationCompleteCallback) {
+    public LocalProxyChannelInitializer(EventLoopGroup group, SslContext sslCtx, Consumer<Channel> registrationCompleteCallback) {
+        this.group = group;
         this.sslCtx = sslCtx;
         this.registrationCompleteCallback = registrationCompleteCallback;
     }
 
-    public static ChannelHandler[] handlers(Consumer<Channel> registrationCompleteCallback) {
+    public static ChannelHandler[] handlers(EventLoopGroup group, Consumer<Channel> registrationCompleteCallback) {
         return new ChannelHandler[] {
                 new HttpClientCodec(),
                 new HttpContentDecompressor(),
-                new LocalChannelSwitcherHandler(registrationCompleteCallback),
+                new LocalChannelSwitcherHandler(group, registrationCompleteCallback),
         };
     }
 
@@ -35,7 +34,7 @@ public class LocalProxyChannelInitializer extends ChannelInitializer<SocketChann
 
 //        p.addLast(new ReadTimeoutHandler(5)); // not for debug
 
-        ChannelHandler[] handlers = handlers(registrationCompleteCallback);
+        ChannelHandler[] handlers = handlers(group, registrationCompleteCallback);
         for (ChannelHandler handler: handlers)
             p.addLast(handler);
     }

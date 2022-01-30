@@ -8,6 +8,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.DecoderResult;
 import io.netty.handler.codec.http.*;
+import io.netty.util.ReferenceCountUtil;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -30,15 +31,29 @@ public class LocalProxyForwardHandler extends ChannelInboundHandlerAdapter {
         Peers peers = ctx.channel().attr(Peers.PEERS_ATTRIBUTE).get();
         RouterHandler.RouteType routeType = ctx.channel().attr(RouterHandler.ROUTE_TYPE_ATTRIBUTE).get();
         if (routeType == RouterHandler.RouteType.PROXY && msg instanceof HttpMessage) {
-            peers.channel.writeAndFlush(msg);
+            if (peers.channel != null) {
+                peers.channel.writeAndFlush(msg);
+            } else {
+                write503Response(ctx);
+            }
+
+        } else {
+            ReferenceCountUtil.release(msg);
         }
 
+    }
+
+    private void write503Response(ChannelHandlerContext ctx) {
+        FullHttpResponse response = new DefaultFullHttpResponse(
+                HTTP_1_1, HttpResponseStatus.valueOf(503, "no peer registered"),
+                Unpooled.EMPTY_BUFFER);
+        response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
+        ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
     }
 
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        cause.printStackTrace();
         ctx.close();
     }
 }

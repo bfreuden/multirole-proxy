@@ -1,9 +1,6 @@
 package com.kairntech.multiroleproxy.local;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.*;
 import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -13,9 +10,11 @@ import java.util.function.Consumer;
 public class LocalChannelSwitcherHandler extends SimpleChannelInboundHandler<Object> {
 
     private final Consumer<Channel> registrationCompleteCallback;
+    private final EventLoopGroup group;
 
-    public LocalChannelSwitcherHandler(Consumer<Channel> registrationCompleteCallback) {
+    public LocalChannelSwitcherHandler(EventLoopGroup group, Consumer<Channel> registrationCompleteCallback) {
         this.registrationCompleteCallback = registrationCompleteCallback;
+        this.group = group;
     }
 
     @Override
@@ -32,7 +31,9 @@ public class LocalChannelSwitcherHandler extends SimpleChannelInboundHandler<Obj
     private void reconfigurePipeline(ChannelPipeline p) {
         while (p.last() != null)
             p.removeLast();
+        // now the channel will receive http request from remote proxy
         p.addLast(new HttpRequestDecoder());
-        p.addLast(new MultiroleForwardingHandler());
+        // and forward them to the multirole
+        p.addLast(new MultiroleForwardingHandler(group));
     }
 }

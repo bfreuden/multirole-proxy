@@ -42,7 +42,7 @@ public class LocalProxy {
             System.out.println("connecting to remote proxy at " + config.getHost() + ":" + config.getPort() + "...");
             b.group(group)
                     .channel(NioSocketChannel.class)
-                    .handler(new LocalProxyChannelInitializer(sslCtx, c -> {
+                    .handler(new LocalProxyChannelInitializer(group, sslCtx, c -> {
                         System.out.println("local proxy connected to remote proxy!");
                         displayErrorMessage = true;
                         channel = c;
