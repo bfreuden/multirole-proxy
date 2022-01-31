@@ -9,10 +9,12 @@ import io.netty.util.ReferenceCountUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
-public class MultiroleForwardingHandler extends ChannelInboundHandlerAdapter {
+public class ForwardRemoteRequestToMultiroleHandler extends ChannelInboundHandlerAdapter {
 
     private final EventLoopGroup group;
     private final Bootstrap b;
@@ -22,18 +24,14 @@ public class MultiroleForwardingHandler extends ChannelInboundHandlerAdapter {
     private boolean connecting = false;
     private volatile boolean connected = false;
 
-    public MultiroleForwardingHandler(EventLoopGroup group) {
+    private static final Logger log = Logger.getLogger( ForwardRemoteRequestToMultiroleHandler.class.getSimpleName().replace("Handler", "") );
+
+    public ForwardRemoteRequestToMultiroleHandler(EventLoopGroup group) {
         this.group = group;
         this.b = new Bootstrap()
                 .group(group)
                 .channel(NioSocketChannel.class)
                 .handler(new MultiroleClientChannelInitializer(() -> localChannel, null));
-    }
-
-    @Override
-    public void channelRegistered(ChannelHandlerContext ctx) {
-        this.localChannel = ctx.channel();
-        ctx.fireChannelRegistered();
     }
 
     @Override
@@ -49,6 +47,7 @@ public class MultiroleForwardingHandler extends ChannelInboundHandlerAdapter {
         synchronized (messages) {
             if (!connected && !connecting) {
                 connecting = true;
+                localChannel = ctx.channel();
                 b.connect("localhost", 12008).addListener((ChannelFutureListener) channelFuture -> {
                     if (channelFuture.isSuccess()) {
                         multiroleChannel = channelFuture.channel();
@@ -83,4 +82,11 @@ public class MultiroleForwardingHandler extends ChannelInboundHandlerAdapter {
         response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
         ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
     }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        log.log(Level.SEVERE, "channel exception: " + ctx.channel(), cause);
+        ctx.close();
+    }
+
 }

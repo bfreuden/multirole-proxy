@@ -13,11 +13,15 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 public class RegisterPeerHandler extends SimpleChannelInboundHandler<Object> {
+
+    private static final Logger log = Logger.getLogger( RegisterPeerHandler.class.getSimpleName().replace("Handler", "") );
 
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) {
@@ -91,7 +95,7 @@ public class RegisterPeerHandler extends SimpleChannelInboundHandler<Object> {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        cause.printStackTrace();
+        log.log(Level.SEVERE, "channel exception: " + ctx.channel(), cause);
         ctx.close();
     }
 }

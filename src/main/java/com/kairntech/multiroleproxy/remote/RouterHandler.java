@@ -10,6 +10,8 @@ import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static com.kairntech.multiroleproxy.remote.RouterHandler.RouteType.PROXY;
 import static com.kairntech.multiroleproxy.remote.RouterHandler.RouteType.REGISTER_CLIENT;
@@ -27,16 +29,20 @@ public class RouterHandler extends ChannelInboundHandlerAdapter {
     public static final String REGISTER_CLIENT_URI = "/_register_client";
     public static final AttributeKey<String> REMOTE_ADDRESS_ATTRIBUTE = AttributeKey.newInstance("remoteAddress");
     public static final AttributeKey<RouteType> ROUTE_TYPE_ATTRIBUTE = AttributeKey.newInstance("routeType");
+    private static final Logger log = Logger.getLogger( RouterHandler.class.getSimpleName().replace("Handler", "") );
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         if (msg instanceof HttpRequest) {
+            if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "handling request: " + ctx.channel() + " " + msg);
             SocketAddress remoteAddress = ctx.channel().remoteAddress();
             if (remoteAddress instanceof InetSocketAddress) {
                 String remoteIPv4 = getIpv4((InetSocketAddress) remoteAddress);
                 ctx.channel().attr(REMOTE_ADDRESS_ATTRIBUTE).set(remoteIPv4);
+                if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "request issuer IP is: " + remoteIPv4);
             } else {
                 ctx.channel().attr(REMOTE_ADDRESS_ATTRIBUTE).set("");
+                log.log(Level.WARNING, "unable to get request issuer IP");
             }
             HttpRequest request = (HttpRequest) msg;
 //            send422ErrorAndCloseIfDecoderError(ctx, request);
@@ -45,9 +51,11 @@ public class RouterHandler extends ChannelInboundHandlerAdapter {
                 send100Continue(ctx);
             }
             if (request.uri().equals(REGISTER_CLIENT_URI)) {
+                if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "'register client' request detected");
                 ctx.channel().attr(ROUTE_TYPE_ATTRIBUTE).set(REGISTER_CLIENT);
             } else {
-                ctx.channel().pipeline().remove(RemoteChannelSwitcherHandler.class); // don't reorganize the pipeline
+                if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "'proxy-able' request detected, removing pipeline reconfigurer and http object aggregator");
+                ctx.channel().pipeline().remove(ReconfigureRemotePipelineHandler.class); // don't reorganize the pipeline
                 ctx.channel().pipeline().remove(HttpObjectAggregator.class); // handle chunks
                 ctx.channel().attr(ROUTE_TYPE_ATTRIBUTE).set(PROXY);
             }
@@ -67,8 +75,15 @@ public class RouterHandler extends ChannelInboundHandlerAdapter {
     }
 
     private static void send100Continue(ChannelHandlerContext ctx) {
+        if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "sending 100 continue :" + ctx.channel());
         FullHttpResponse response = new DefaultFullHttpResponse(HTTP_1_1, CONTINUE, Unpooled.EMPTY_BUFFER);
-        ctx.write(response);
+        ctx.writeAndFlush(response);
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        log.log(Level.SEVERE, "channel exception: " + ctx.channel(), cause);
+        ctx.close();
     }
 
 }

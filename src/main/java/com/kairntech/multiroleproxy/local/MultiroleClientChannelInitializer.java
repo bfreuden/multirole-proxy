@@ -12,11 +12,11 @@ import java.util.function.Supplier;
 public class MultiroleClientChannelInitializer extends ChannelInitializer<SocketChannel> {
 
     private final SslContext sslCtx;
-    private final Channel replyChannel;
+    private final Supplier<Channel> replyChannel;
 
     public MultiroleClientChannelInitializer(Supplier<Channel> replyChannel, SslContext sslCtx) {
         this.sslCtx = sslCtx;
-        this.replyChannel = replyChannel.get();
+        this.replyChannel = replyChannel;
     }
 
     @Override
@@ -27,8 +27,15 @@ public class MultiroleClientChannelInitializer extends ChannelInitializer<Socket
         if (sslCtx != null) {
             p.addLast(sslCtx.newHandler(ch.alloc()));
         }
+        ResponseConnectionTweakerHandler responseConnectionTweaker = new ResponseConnectionTweakerHandler();
+        ResponseConnectionTweakerHandler.RequestConnectionTweaker requestConnectionTweaker = responseConnectionTweaker.requestConnectionTweaker;
 
         p.addLast(new HttpClientCodec());
+        p.addLast(responseConnectionTweaker);
+        p.addLast(requestConnectionTweaker);
+        p.addLast(new ForwardMultiroleResponseToRemoteHandler(replyChannel));
+
+//        p.addLast(new HttpRequestEncoder());
 
         // Remove the following line if you don't want automatic content decompression.
 //        p.addLast(new HttpContentDecompressor());
