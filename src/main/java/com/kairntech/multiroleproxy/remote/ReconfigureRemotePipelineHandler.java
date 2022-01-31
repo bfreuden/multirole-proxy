@@ -19,7 +19,7 @@ public class ReconfigureRemotePipelineHandler extends ChannelOutboundHandlerAdap
             reconfigurationDone = true;
             writeFuture.addListener(e -> {
                 Peers peers = channel.attr(Peers.PEERS_ATTRIBUTE).get();
-                peers.channel = channel;
+                peers.peerConnected(channel);
                 if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "reconfiguring pipeline as http client + forwarding proxy: " + channel + " " + msg);
                 RemoteProxyChannelInitializer.reconfigurePipeline(channel.pipeline());
             });

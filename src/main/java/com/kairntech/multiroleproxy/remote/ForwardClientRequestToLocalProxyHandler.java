@@ -2,6 +2,7 @@ package com.kairntech.multiroleproxy.remote;
 
 import com.kairntech.multiroleproxy.Peers;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -29,11 +30,12 @@ public class ForwardClientRequestToLocalProxyHandler extends ChannelInboundHandl
         RouterHandler.RouteType routeType = ctx.channel().attr(RouterHandler.ROUTE_TYPE_ATTRIBUTE).get();
         if (routeType == RouterHandler.RouteType.PROXY ) {
             if (msg instanceof HttpObject) {
-                if (peers.channel != null) {
+                Channel peerChannel = peers.getPeerChannel();
+                if (peerChannel != null) {
                     if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "sending client data to local proxy...: " + ctx.channel() + " " + msg);
-                    if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "... local proxy channel is: " + peers.channel);
-                    peers.channel.attr(CLIENT_CHANNEL_ATTRIBUTE).set(ctx.channel());
-                    peers.channel.writeAndFlush(msg);
+                    if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "... local proxy channel is: " + peerChannel);
+                    peerChannel.attr(CLIENT_CHANNEL_ATTRIBUTE).set(ctx.channel());
+                    peerChannel.writeAndFlush(msg);
                 } else {
                     log.log(Level.WARNING, "no local proxy registered, can't to send data: " + ctx.channel() + " " + msg);
                     ReferenceCountUtil.release(msg);

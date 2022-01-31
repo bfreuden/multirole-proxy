@@ -58,10 +58,13 @@ public class RemoteProxyChannelInitializer extends ChannelInitializer<SocketChan
             @Override
             public void operationComplete(Future<? super Void> future) {
                 RouterHandler.RouteType routeType = ch.attr(RouterHandler.ROUTE_TYPE_ATTRIBUTE).get();
-                if (routeType == RouterHandler.RouteType.REGISTER_CLIENT)
+                if (routeType == RouterHandler.RouteType.REGISTER_CLIENT) {
                     log.log(Level.FINEST, "peer connection closed");
-                else
+                    Peers peers = ch.attr(Peers.PEERS_ATTRIBUTE).get();
+                    peers.peerDisconnected(ch);
+                } else {
                     log.log(Level.FINEST, "client connection closed");
+                }
 
             }
         });
