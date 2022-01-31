@@ -1,7 +1,6 @@
-package com.kairntech.multiroleproxy;
+package com.kairntech.multiroleproxy.remote;
 
 import io.netty.channel.Channel;
-import io.netty.channel.socket.SocketChannel;
 import io.netty.util.AttributeKey;
 
 public class Peers {

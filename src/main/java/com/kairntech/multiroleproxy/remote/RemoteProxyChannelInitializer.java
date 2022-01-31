@@ -1,7 +1,6 @@
 package com.kairntech.multiroleproxy.remote;
 
 
-import com.kairntech.multiroleproxy.Peers;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.*;

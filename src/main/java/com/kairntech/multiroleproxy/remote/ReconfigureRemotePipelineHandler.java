@@ -1,6 +1,5 @@
 package com.kairntech.multiroleproxy.remote;
 
-import com.kairntech.multiroleproxy.Peers;
 import io.netty.channel.*;
 
 import java.util.logging.Level;

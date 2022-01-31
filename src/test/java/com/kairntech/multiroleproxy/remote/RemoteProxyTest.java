@@ -1,6 +1,5 @@
 package com.kairntech.multiroleproxy.remote;
 
-import com.kairntech.multiroleproxy.Peers;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;

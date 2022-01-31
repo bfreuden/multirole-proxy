@@ -1,6 +1,5 @@
 package com.kairntech.multiroleproxy.remote;
 
-import com.kairntech.multiroleproxy.Peers;
 import com.kairntech.multiroleproxy.ProxyConfig;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
