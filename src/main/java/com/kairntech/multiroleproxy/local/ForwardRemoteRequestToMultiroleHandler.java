@@ -11,7 +11,6 @@ import io.netty.util.concurrent.GenericFutureListener;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -38,7 +37,7 @@ public class ForwardRemoteRequestToMultiroleHandler extends ChannelInboundHandle
         this.b = new Bootstrap()
                 .group(group)
                 .channel(NioSocketChannel.class)
-                .handler(new MultiroleClientChannelInitializer(() -> localChannel, null));
+                .handler(new MultiroleForwardingClientChannelInitializer(() -> localChannel, null));
     }
 
     @Override

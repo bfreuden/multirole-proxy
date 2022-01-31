@@ -9,12 +9,12 @@ import io.netty.handler.ssl.SslContext;
 
 import java.util.function.Supplier;
 
-public class MultiroleClientChannelInitializer extends ChannelInitializer<SocketChannel> {
+public class MultiroleForwardingClientChannelInitializer extends ChannelInitializer<SocketChannel> {
 
     private final SslContext sslCtx;
     private final Supplier<Channel> replyChannel;
 
-    public MultiroleClientChannelInitializer(Supplier<Channel> replyChannel, SslContext sslCtx) {
+    public MultiroleForwardingClientChannelInitializer(Supplier<Channel> replyChannel, SslContext sslCtx) {
         this.sslCtx = sslCtx;
         this.replyChannel = replyChannel;
     }
