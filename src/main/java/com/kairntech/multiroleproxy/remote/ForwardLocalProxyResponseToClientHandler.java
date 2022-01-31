@@ -3,6 +3,8 @@ package com.kairntech.multiroleproxy.remote;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.codec.http.HttpObject;
+import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.util.AttributeKey;
 
 import java.util.logging.Level;
@@ -16,11 +18,19 @@ public class ForwardLocalProxyResponseToClientHandler extends ChannelInboundHand
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "sending data back to the client...: " + ctx.channel() + " " + msg);
-        Channel clientChannel = ctx.channel().attr(CLIENT_CHANNEL_ATTRIBUTE).get();
-        if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "client channel is...: " + clientChannel);
-        //TODO handle write error (with logging at least)
-        clientChannel.writeAndFlush(msg);
+        if (msg instanceof HttpObject) {
+            if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "sending data back to the client...: " + ctx.channel() + " " + msg);
+            Channel clientChannel = ctx.channel().attr(CLIENT_CHANNEL_ATTRIBUTE).get();
+            if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "client channel is...: " + clientChannel);
+            //TODO handle write error (with logging at least)
+            if (msg instanceof LastHttpContent) {
+                clientChannel.writeAndFlush(msg);
+            } else {
+                clientChannel.write(msg);
+            }
+        } else {
+            log.log(Level.WARNING, "unsupported message: " + msg);
+        }
     }
 
     @Override

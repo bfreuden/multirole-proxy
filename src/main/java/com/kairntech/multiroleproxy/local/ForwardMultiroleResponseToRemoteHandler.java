@@ -4,6 +4,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.HttpObject;
+import io.netty.handler.codec.http.LastHttpContent;
 
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -24,7 +25,11 @@ public class ForwardMultiroleResponseToRemoteHandler extends ChannelInboundHandl
         if (msg instanceof HttpObject) {
             System.out.println("writing data back to remote: " + ctx.channel() + " " + msg);
             Channel channel = replyChannel.get();
-            channel.writeAndFlush(msg);
+            if (msg instanceof LastHttpContent) {
+                channel.writeAndFlush(msg);
+            } else {
+                channel.write(msg);
+            }
         } else {
             log.log(Level.WARNING, "unsupported message: " + msg);
             // FIXME release msg!!

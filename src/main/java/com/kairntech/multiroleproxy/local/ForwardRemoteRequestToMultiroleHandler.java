@@ -59,7 +59,7 @@ public class ForwardRemoteRequestToMultiroleHandler extends ChannelInboundHandle
                 connecting = true;
 //                connecting.set(true);
                 localChannel = ctx.channel();
-                b.connect("localhost", 12008).addListener((ChannelFutureListener) connectFuture -> {
+                b.connect("localhost", 12007).addListener((ChannelFutureListener) connectFuture -> {
                     synchronized (messages) {
                         if (connectFuture.isSuccess()) {
                             multiroleChannel = connectFuture.channel();
