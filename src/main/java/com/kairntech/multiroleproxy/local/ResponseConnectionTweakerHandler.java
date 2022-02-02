@@ -45,7 +45,9 @@ public class ResponseConnectionTweakerHandler extends ChannelInboundHandlerAdapt
             if (!HttpHeaderValues.CLOSE.toString().equals(connectionHeader)) {
                 log.log(Level.SEVERE, "expecting a connection close response header, got: " + connectionHeader);
             }
-        } else if (!(msg instanceof HttpObject)){
+        } else if ((msg instanceof HttpObject)){
+            if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "receiving content from multirole: " + ctx.channel() + " " + msg);
+        } else  {
             log.log(Level.WARNING, "unsupported message type: " + ctx.channel() + " " + msg);
         }
         ctx.fireChannelRead(msg);

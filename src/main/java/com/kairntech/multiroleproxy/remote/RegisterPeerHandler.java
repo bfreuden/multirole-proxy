@@ -3,9 +3,11 @@ package com.kairntech.multiroleproxy.remote;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.DecoderResult;
 import io.netty.handler.codec.http.*;
+import io.netty.util.ReferenceCountUtil;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -18,7 +20,7 @@ import java.util.logging.Logger;
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
-public class RegisterPeerHandler extends SimpleChannelInboundHandler<Object> {
+public class RegisterPeerHandler extends ChannelInboundHandlerAdapter {
 
     private static final Logger log = Logger.getLogger( RegisterPeerHandler.class.getSimpleName().replace("Handler", "") );
 
@@ -28,16 +30,17 @@ public class RegisterPeerHandler extends SimpleChannelInboundHandler<Object> {
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Object msg) {
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
         Peers peers = ctx.channel().attr(Peers.PEERS_ATTRIBUTE).get();
         RouterHandler.RouteType routeType = ctx.channel().attr(RouterHandler.ROUTE_TYPE_ATTRIBUTE).get();
         if (routeType == RouterHandler.RouteType.REGISTER_CLIENT && msg instanceof FullHttpRequest) {
             FullHttpRequest request = (FullHttpRequest) msg;
             String body = request.content().toString(StandardCharsets.UTF_8);
-            if (! writeAckResponse(request, ctx)) {
+            if (!writeAckResponse(request, ctx)) {
                 // If keep-alive is off, close the connection once the content is fully written.
                 ctx.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
             }
+            ReferenceCountUtil.release(msg);
         } else {
             ctx.fireChannelRead(msg);
         }

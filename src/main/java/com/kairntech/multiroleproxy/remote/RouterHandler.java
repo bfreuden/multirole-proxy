@@ -1,6 +1,7 @@
 package com.kairntech.multiroleproxy.remote;
 
 import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.*;
@@ -34,6 +35,7 @@ public class RouterHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         if (msg instanceof HttpRequest) {
+            Channel ch = ctx.channel();
             if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "handling request: " + ctx.channel() + " " + msg);
             SocketAddress remoteAddress = ctx.channel().remoteAddress();
             if (remoteAddress instanceof InetSocketAddress) {
@@ -48,12 +50,28 @@ public class RouterHandler extends ChannelInboundHandlerAdapter {
 //            send422ErrorAndCloseIfDecoderError(ctx, request);
 
             if (HttpUtil.is100ContinueExpected(request)) {
+                // don't transmit to multiroles, will be more complex to handle
+                request.headers().remove(HttpHeaderNames.EXPECT);
                 send100Continue(ctx);
             }
             if (request.uri().equals(REGISTER_CLIENT_URI)) {
                 if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "'register client' request detected");
                 ctx.channel().attr(ROUTE_TYPE_ATTRIBUTE).set(REGISTER_CLIENT);
             } else {
+//                ch.config().setAutoRead(false);
+//                new Thread(new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        synchronized (this) {
+//                            try {
+//                                this.wait(10000L);
+//                                ch.config().setAutoRead(true);
+//                            } catch (InterruptedException e) {
+//                                e.printStackTrace();
+//                            }
+//                        }
+//                    }
+//                }).start();
                 if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "'proxy-able' request detected, removing pipeline reconfigurer and http object aggregator");
                 ctx.channel().pipeline().remove(ReconfigureRemotePipelineHandler.class); // don't reorganize the pipeline
                 ctx.channel().pipeline().remove(HttpObjectAggregator.class); // handle chunks

@@ -29,6 +29,13 @@ public class ForwardClientRequestToLocalProxyHandler extends ChannelInboundHandl
         RouterHandler.RouteType routeType = ctx.channel().attr(RouterHandler.ROUTE_TYPE_ATTRIBUTE).get();
         if (routeType == RouterHandler.RouteType.PROXY ) {
             if (msg instanceof HttpObject) {
+//                if (msg instanceof HttpRequest) {
+//                    HttpRequest request = (HttpRequest) msg;
+//                    if (HttpUtil.is100ContinueExpected(request)) {
+//                        ReferenceCountUtil.release(msg);
+//                        return;
+//                    }
+//                }
                 Channel peerChannel = peers.getPeerChannel();
                 if (peerChannel != null) {
                     if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "sending client data to local proxy...: " + ctx.channel() + " " + msg);

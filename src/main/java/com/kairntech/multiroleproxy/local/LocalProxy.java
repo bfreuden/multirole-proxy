@@ -23,6 +23,8 @@ public class LocalProxy {
     private EventLoopGroup group;
     private Channel channel;
     private boolean displayErrorMessage = true;
+    private NioEventLoopGroup bossGroup;
+
     public LocalProxy(ProxyConfig config) {
         this.config = config;
     }
@@ -37,7 +39,10 @@ public class LocalProxy {
             } else {
                 sslCtx = null;
             }
+            this.bossGroup = new NioEventLoopGroup(1);
             this.group = new NioEventLoopGroup();
+            AdminServer adminServer = new AdminServer(bossGroup, group);
+            adminServer.start();
             Bootstrap b = new Bootstrap();
             System.out.println("connecting to remote proxy at " + config.getHost() + ":" + config.getPort() + "...");
             b.group(group)
@@ -84,6 +89,8 @@ public class LocalProxy {
     public void stop() {
         if (group != null)
             group.shutdownGracefully();
+        if (bossGroup != null)
+            bossGroup.shutdownGracefully();
     }
 
 }
