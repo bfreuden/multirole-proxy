@@ -3,12 +3,14 @@ package com.kairntech.multiroleproxy.local;
 import com.kairntech.multiroleproxy.util.SimpleHttpRequest;
 import com.kairntech.multiroleproxy.util.SimpleHttpServer;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.handler.codec.http.*;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 
+import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.StringJoiner;
@@ -30,33 +32,40 @@ public class AdminServer extends SimpleHttpServer {
         addHandler(Pattern.compile(Pattern.quote("/add-multirole")), HttpMethod.POST, (req) -> {
             JSONObject parse = parseJsonObjectBody(req);
             String host = (String)parse.get("host");
-            Integer port = (Integer) parse.get("port");
-            multiroles.addServer(host, port);
+            if (host == null)
+                host = "localhost";
+            String port = (String) parse.get("port");
+            multiroles.addServer(host, Integer.parseInt(port));
             return textResponse("server successfully added");
         });
 
         addHandler(Pattern.compile(Pattern.quote("/delete-multirole")), HttpMethod.POST, (req) -> {
             JSONObject parse = parseJsonObjectBody(req);
             String host = (String)parse.get("host");
-            Integer port = (Integer) parse.get("port");
-            multiroles.deleteServer(host, port);
+            String port = (String) parse.get("port");
+            multiroles.deleteServer(host, Integer.parseInt(port));
             return textResponse("server successfully deleted");
         });
 
-        addHandler(Pattern.compile(Pattern.quote("/list-multiroles")), HttpMethod.POST, (req) -> {
+        addHandler(Pattern.compile(Pattern.quote("/list-multiroles")), HttpMethod.GET, (req) -> {
             HashSet<Multirole> servers = multiroles.getServers();
-            StringJoiner joiner = new StringJoiner("\r\n");
-            joiner.add("multirole servers:");
-            for (Multirole server : servers) {
-                joiner.add("- " + server.getHost() + ":" + server.getPort() + " status: " + server.getStatus().name().replace('_', ' '));
+            if (servers.isEmpty()) {
+                return textResponse("no multirole servers\r\n");
+            } else {
+                StringJoiner joiner = new StringJoiner("\r\n");
+                joiner.add("multirole servers:");
+                for (Multirole server : servers) {
+                    joiner.add("- " + server.getHost() + ":" + server.getPort() + " status: " + server.getStatus().name().replace('_', ' '));
+                }
+                joiner.add("");
+                return textResponse(joiner.toString());
             }
-            joiner.add("");
-            return textResponse(joiner.toString());
         });
 
-        listenLocally().addListener((channelFuture) -> {
+        listenLocally().addListener((ChannelFutureListener)channelFuture -> {
             if (channelFuture.isSuccess()) {
-                System.out.println("admin server listening to requests");
+                InetSocketAddress socketAddress = (InetSocketAddress)channelFuture.channel().localAddress();
+                System.out.println("admin server listening to requests on http://localhost:" + socketAddress.getPort());
             } else {
                 System.err.println("admin server not listening to requests");
             }

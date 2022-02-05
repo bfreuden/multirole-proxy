@@ -43,6 +43,7 @@ public class Main {
             System.exit(1);
         } catch (Throwable e) {
             System.err.println("error: " + e.getMessage());
+            e.printStackTrace();
             System.exit(1);
         }
     }

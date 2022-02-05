@@ -29,17 +29,17 @@ public class OpenAPISpecParser {
 
     public static OpenAPISpec parse(ByteBuf content, boolean parseOnly) throws NoSuchAlgorithmException, IOException {
         if (parseOnly) {
+            try (InputStreamReader reader = new InputStreamReader(new ByteBufInputStream(content), StandardCharsets.UTF_8)) {
+                JSONObject parse = (JSONObject) JSONValue.parse(reader);
+                return new OpenAPISpec(parse, null, null);
+            }
+        } else {
             String jsonString = content.toString(StandardCharsets.UTF_8);
             JSONObject parse = (JSONObject) JSONValue.parse(jsonString);
             MessageDigest md5 = MessageDigest.getInstance("MD5");
             byte[] digest = md5.digest(jsonString.getBytes(StandardCharsets.UTF_8));
             String md5sum = Base64.getEncoder().encodeToString(digest);
             return new OpenAPISpec(parse, jsonString, md5sum);
-        } else {
-            try (InputStreamReader reader = new InputStreamReader(new ByteBufInputStream(content), StandardCharsets.UTF_8)) {
-                JSONObject parse = (JSONObject) JSONValue.parse(reader);
-                return new OpenAPISpec(parse, null, null);
-            }
         }
     }
 }

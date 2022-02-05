@@ -23,6 +23,7 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 public class RouterHandler extends ChannelInboundHandlerAdapter {
 
     public enum RouteType {
+        OPENAPI,
         REGISTER_CLIENT,
         REGISTER_SPEC,
         PROXY
@@ -30,6 +31,7 @@ public class RouterHandler extends ChannelInboundHandlerAdapter {
 
     public static final String REGISTER_SPEC_URI = "/_register_spec";
     public static final String REGISTER_CLIENT_URI = "/_register_client";
+    public static final String OPENAPI_JSON_URI = "/openapi.json";
     public static final AttributeKey<String> REMOTE_ADDRESS_ATTRIBUTE = AttributeKey.newInstance("remoteAddress");
     public static final AttributeKey<RouteType> ROUTE_TYPE_ATTRIBUTE = AttributeKey.newInstance("routeType");
     private static final Logger log = Logger.getLogger( RouterHandler.class.getSimpleName().replace("Handler", "") );
@@ -62,6 +64,9 @@ public class RouterHandler extends ChannelInboundHandlerAdapter {
             } else if (request.uri().equals(REGISTER_SPEC_URI)) {
                 maybeLogFinest(log, () -> "'register spec' request detected");
                 ctx.channel().attr(ROUTE_TYPE_ATTRIBUTE).set(REGISTER_SPEC);
+            } else if (request.uri().equals(OPENAPI_JSON_URI)) {
+                maybeLogFinest(log, () -> "'openapi spec' request detected");
+                ctx.channel().attr(ROUTE_TYPE_ATTRIBUTE).set(OPENAPI);
             } else {
                 maybeLogFinest(log, () -> "'proxy-able' request detected, removing pipeline reconfigurer and http object aggregator");
                 ctx.channel().pipeline().remove(ReconfigureRemotePipelineHandler.class); // don't reorganize the pipeline

@@ -34,6 +34,7 @@ public class RemoteProxyChannelInitializer extends ChannelInitializer<SocketChan
                 new HttpResponseEncoder(),
                 new RegisterPeerHandler(),
                 new RegisterSpecHandler(),
+                new OpenAPISpecHandler(),
                 new ForwardClientRequestToLocalProxyHandler()
         };
     }

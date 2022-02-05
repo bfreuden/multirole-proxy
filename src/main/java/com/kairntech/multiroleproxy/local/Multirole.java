@@ -5,11 +5,13 @@ import com.kairntech.multiroleproxy.util.SimpleHttpClient;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpResponseDecoder;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
 import java.util.Objects;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -29,8 +31,9 @@ public class Multirole {
     final int port;
     private SimpleHttpClient multiroleClient;
     private volatile Status status = not_known_yet;
-    private final Bootstrap bootstrap;
     private volatile String md5sum = "";
+    private Bootstrap bootstrap;
+    private ScheduledFuture schedule;
 
     public enum Status {
         not_known_yet,
@@ -45,9 +48,6 @@ public class Multirole {
         this.host = host;
         this.port = port;
         this.group = group;
-        this.bootstrap = new Bootstrap()
-                .group(group)
-                .handler(new HttpResponseDecoder());
     }
 
     public String getId() {
@@ -69,11 +69,20 @@ public class Multirole {
     public void connect() {
         if (status == Status.not_known_yet)
             maybeLogFinest(log, () -> "connecting to the multirole server on " + host + ":" + port);
-        if (multiroleClient == null)
-             multiroleClient = new SimpleHttpClient(group, host, port);
+        if (multiroleClient == null) {
+            this.bootstrap  = new Bootstrap()
+                    .group(group)
+                    .channel(NioSocketChannel.class)
+                    .handler(new HttpResponseDecoder());
+            multiroleClient = new SimpleHttpClient(group, host, port);
+        }
         maybeLogFinest(log, () -> "fetching openapi spec from  " + host + ":" + port);
         multiroleClient.get("/openapi.json").send(handler -> {
             if (handler.success()) {
+                if (schedule != null) {
+                    schedule.cancel(false);
+                    schedule = null;
+                }
                 FullHttpResponse response = handler.result();
                 if (response.status().equals(HttpResponseStatus.OK)) {
                     try {
@@ -103,10 +112,16 @@ public class Multirole {
                     log.warning("failed to connect to multirole: " + host + ":" + port);
                 status = Status.stopped;
                 // if connection failed, try again later
-                group.schedule(this::connect, 30, TimeUnit.SECONDS);
+                if (schedule == null)
+                    schedule = group.schedule(this::connect, 30, TimeUnit.SECONDS);
             }
         });
     }
+
+    public void notifyRemoved() {
+        multiroleChangeNotifier.notifyMultiroleDeleted(this);
+    }
+
 
     private void setupConnectionLostHandler() {
         bootstrap.connect(host, port).addListener((ChannelFutureListener) future -> {
@@ -114,10 +129,14 @@ public class Multirole {
                 // if connection succeeded, add a close listener, don't send anything and
                 // wait for multirole server to kick us or to shut down
                 // in the case, try to reconnect
-                future.channel().closeFuture().addListener((ChannelFutureListener) future1 -> connect());
+                future.channel().closeFuture().addListener((ChannelFutureListener) future1 -> {
+                    maybeLog(log, FINEST, () -> "got kicked from multirole " + host + ":" + port);
+                    connect();
+                });
             } else {
                 // if connection failed, try again later
-                group.schedule(Multirole.this::connect, 30, TimeUnit.SECONDS);
+                if (schedule == null)
+                    schedule = group.schedule(Multirole.this::connect, 30, TimeUnit.SECONDS);
             }
         });
     }

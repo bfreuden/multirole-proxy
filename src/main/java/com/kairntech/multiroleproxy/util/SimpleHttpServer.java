@@ -7,6 +7,8 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
 import io.netty.util.AttributeKey;
 
 import java.io.IOException;
@@ -32,7 +34,7 @@ public class SimpleHttpServer {
         }
     }
 
-    static AttributeKey<Consumer<AsyncResult<FullHttpResponse>>> HANDLER_ATTR = AttributeKey.newInstance("handler");
+//    static AttributeKey<Consumer<AsyncResult<FullHttpResponse>>> HANDLER_ATTR = AttributeKey.newInstance("server-handler");
 
     private final ServerBootstrap b;
     private final ArrayList<ServerHandler> handlers = new ArrayList<>();
@@ -51,7 +53,8 @@ public class SimpleHttpServer {
         this.b = new ServerBootstrap();
         b.group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)
-                .handler(new SimpleHttpServerChannelInitializer(this));
+                .handler(new LoggingHandler(LogLevel.INFO))
+                .childHandler(new SimpleHttpServerChannelInitializer(this));
 
     }
 
@@ -65,7 +68,7 @@ public class SimpleHttpServer {
         ChannelFuture result = b.bind(port);
         result.addListener((ChannelFutureListener) channelFuture -> {
             if (channelFuture.isSuccess()) {
-                System.err.println("server started on port " + port);
+                System.out.println("server started on port " + port);
             } else {
                 System.err.println("unable to start server on port port");
             }
@@ -77,7 +80,7 @@ public class SimpleHttpServer {
         ChannelFuture result = b.bind("127.0.0.1", port);
         result.addListener((ChannelFutureListener) channelFuture -> {
             if (channelFuture.isSuccess()) {
-                System.err.println("server started locally on port " + port);
+                System.out.println("server started locally on port " + port);
             } else {
                 System.err.println("unable to start server on port port");
             }

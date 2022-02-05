@@ -1,8 +1,11 @@
 package com.kairntech.multiroleproxy.remote;
 
 import com.kairntech.multiroleproxy.util.OpenAPISpecParser;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.util.AttributeKey;
+
+import java.util.NoSuchElementException;
 
 public class Peers {
 
@@ -26,4 +29,7 @@ public class Peers {
 
     }
 
+    public ByteBuf getSpec() {
+        throw new NoSuchElementException();
+    }
 }

@@ -2,6 +2,7 @@ package com.kairntech.multiroleproxy.util;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -28,20 +29,24 @@ public class SimpleHttpClient {
             this.method = method;
             this.uri = uri;
             this.request = content == null ? new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, method, uri) :  new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, method, uri, content);
+            this.request.headers().add(HttpHeaderNames.HOST, host+":"+port);
         }
 
         public void send(Consumer<AsyncResult<FullHttpResponse>> handler) {
-            b.connect(host, port).addListener((ChannelFutureListener) future -> {
-                if (future.isSuccess()) {
-                    future.channel().attr(HANDLER_ATTR).set(handler);
-                    future.channel().writeAndFlush(
-                            request
-                                    .headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE)
-                    );
-                } else {
-                    handler.accept(new AsyncResult<>(future.cause()));
-                }
-            });
+            try {
+                b.connect(host, port).addListener((ChannelFutureListener) future -> {
+                    if (future.isSuccess()) {
+                        Channel channel = future.channel();
+                        channel.attr(HANDLER_ATTR).set(handler);
+                        request.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
+                        channel.writeAndFlush(request);
+                    } else {
+                        handler.accept(new AsyncResult<>(future.cause()));
+                    }
+                });
+            } catch (Throwable t) {
+                handler.accept(new AsyncResult<>(t));
+            }
         }
     }
 

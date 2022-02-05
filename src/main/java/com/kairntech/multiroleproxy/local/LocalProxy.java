@@ -55,6 +55,8 @@ public class LocalProxy {
             Multiroles multiroles = new Multiroles(group, multiroleChangeNotifier);
             AdminServer adminServer = new AdminServer(bossGroup, group, multiroles);
             adminServer.start();
+            if (true)
+                return;
             Bootstrap b = new Bootstrap();
             System.out.println("connecting to remote proxy at " + config.getHost() + ":" + config.getPort() + "...");
             b.group(group)
