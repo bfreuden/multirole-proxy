@@ -33,6 +33,7 @@ public class RemoteProxyChannelInitializer extends ChannelInitializer<SocketChan
                 new ReconfigureRemotePipelineHandler(), // will be removed if non "register peer" call
                 new HttpResponseEncoder(),
                 new RegisterPeerHandler(),
+                new RegisterSpecHandler(),
                 new ForwardClientRequestToLocalProxyHandler()
         };
     }
