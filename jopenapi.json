@@ -1,0 +1,553 @@
+{
+  "openapi" : "3.0.2",
+  "info" : {
+    "title" : "Multirole server API doc",
+    "description" : "Multirole server API documentation",
+    "version" : "1.0"
+  },
+  "tags" : [ {
+    "name" : "converters",
+    "description" : "Converters"
+  }, {
+    "name" : "formatters",
+    "description" : "Formatters"
+  }, {
+    "name" : "annotators",
+    "description" : "Annotators"
+  }, {
+    "name" : "processors",
+    "description" : "Processors"
+  } ],
+  "paths" : {
+    "/convert/genericxml" : {
+      "post" : {
+        "summary" : "",
+        "tags" : [ "converters" ],
+        "operationId" : "genericxmlconvert",
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "file" : {
+                    "type" : "string",
+                    "format" : "binary"
+                  },
+                  "parameters" : {
+                    "$ref" : "#/components/schemas/GenericXMLParameters"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Formatted output",
+            "application/json" : {
+              "schema" : {
+                "type" : "array",
+                "items" : {
+                  "$ref" : "#/components/schemas/Document"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error"
+          }
+        },
+        "description" : ""
+      }
+    },
+    "/convert/tika" : {
+      "post" : {
+        "summary" : "",
+        "tags" : [ "converters" ],
+        "operationId" : "tikaconvert",
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "file" : {
+                    "type" : "string",
+                    "format" : "binary"
+                  },
+                  "parameters" : {
+                    "$ref" : "#/components/schemas/TikaConverterParameters"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Formatted output",
+            "application/json" : {
+              "schema" : {
+                "type" : "array",
+                "items" : {
+                  "$ref" : "#/components/schemas/Document"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error"
+          }
+        },
+        "description" : ""
+      }
+    },
+    "/process/labelfilter" : {
+      "post" : {
+        "summary" : "",
+        "tags" : [ "processors" ],
+        "operationId" : "process_with_labelfilter",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "documents" : {
+                    "type" : "array",
+                    "items" : {
+                      "$ref" : "#/components/schemas/Document"
+                    }
+                  },
+                  "parameters" : {
+                    "$ref" : "#/components/schemas/LabelFilterProcessorParameters"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Processed documents",
+            "application/json" : {
+              "schema" : {
+                "type" : "array",
+                "items" : {
+                  "$ref" : "#/components/schemas/Document"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error"
+          }
+        },
+        "description" : ""
+      }
+    },
+    "/annotate/keyword" : {
+      "post" : {
+        "summary" : "",
+        "tags" : [ "annotators" ],
+        "operationId" : "annotate_with_keyword",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "documents" : {
+                    "type" : "array",
+                    "items" : {
+                      "$ref" : "#/components/schemas/Document"
+                    }
+                  },
+                  "parameters" : {
+                    "$ref" : "#/components/schemas/KeywordAnnotatorParameters"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Annotation result",
+            "application/json" : {
+              "schema" : {
+                "type" : "array",
+                "items" : {
+                  "$ref" : "#/components/schemas/AnnotationResult"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Error"
+          }
+        },
+        "description" : ""
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "Category" : {
+        "required" : [ "labelName" ],
+        "type" : "object",
+        "properties" : {
+          "labelName" : {
+            "type" : "string",
+            "description" : "Name of the label"
+          },
+          "score" : {
+            "type" : "number",
+            "description" : "Score of the category",
+            "format" : "double",
+            "nullable" : true
+          },
+          "status" : {
+            "type" : "string",
+            "description" : "Status of the category",
+            "nullable" : true,
+            "enum" : [ "OK", "KO" ]
+          },
+          "properties" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "object",
+              "description" : "Properties of the category",
+              "nullable" : true
+            },
+            "description" : "Properties of the category",
+            "nullable" : true
+          }
+        }
+      },
+      "Term" : {
+        "required" : [ "identifier", "lexicon" ],
+        "type" : "object",
+        "properties" : {
+          "identifier" : {
+            "type" : "string",
+            "description" : "Identifier of the term"
+          },
+          "lexicon" : {
+            "type" : "string",
+            "description" : "Lexicon containing this term"
+          },
+          "preferredForm" : {
+            "type" : "string",
+            "description" : "Preferred form the term",
+            "nullable" : true
+          },
+          "score" : {
+            "type" : "number",
+            "description" : "Score of the term",
+            "format" : "double",
+            "nullable" : true
+          },
+          "properties" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "object",
+              "description" : "Properties of the term",
+              "nullable" : true
+            },
+            "description" : "Properties of the term",
+            "nullable" : true
+          }
+        }
+      },
+      "Document" : {
+        "required" : [ "text" ],
+        "type" : "object",
+        "properties" : {
+          "identifier" : {
+            "type" : "string",
+            "description" : "Identifier of the document",
+            "nullable" : true
+          },
+          "title" : {
+            "type" : "string",
+            "description" : "Title of the document",
+            "nullable" : true
+          },
+          "metadata" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "object",
+              "description" : "User metadata",
+              "nullable" : true
+            },
+            "description" : "User metadata",
+            "nullable" : true
+          },
+          "text" : {
+            "type" : "string",
+            "description" : "Plain text of the document"
+          },
+          "sourceText" : {
+            "type" : "string",
+            "description" : "Original text of the document (with markup and not sanitized)",
+            "nullable" : true
+          },
+          "boundaries" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "description" : "List of text boundaries by type",
+              "nullable" : true,
+              "items" : {
+                "$ref" : "#/components/schemas/Boundary"
+              }
+            },
+            "description" : "List of text boundaries by type",
+            "nullable" : true
+          },
+          "sentences" : {
+            "type" : "array",
+            "description" : "List of sentences",
+            "nullable" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/Sentence"
+            }
+          },
+          "annotations" : {
+            "type" : "array",
+            "description" : "List of annotations",
+            "nullable" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/Annotation"
+            }
+          },
+          "categories" : {
+            "type" : "array",
+            "description" : "List of categories",
+            "nullable" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/Category"
+            }
+          },
+          "properties" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "object",
+              "description" : "Document processing properties",
+              "nullable" : true
+            },
+            "description" : "Document processing properties",
+            "nullable" : true
+          }
+        }
+      },
+      "Sentence" : {
+        "required" : [ "end", "start" ],
+        "type" : "object",
+        "properties" : {
+          "start" : {
+            "type" : "integer",
+            "description" : "Start position in converted text",
+            "format" : "int32"
+          },
+          "end" : {
+            "type" : "integer",
+            "description" : "End position in converted text",
+            "format" : "int32"
+          }
+        }
+      },
+      "Annotation" : {
+        "required" : [ "end", "labelName", "start" ],
+        "type" : "object",
+        "properties" : {
+          "start" : {
+            "type" : "integer",
+            "description" : "Start position in the text of the document",
+            "format" : "int32"
+          },
+          "end" : {
+            "type" : "integer",
+            "description" : "End position (excluded) in the text of the document",
+            "format" : "int32"
+          },
+          "labelName" : {
+            "type" : "string",
+            "description" : "Name of the label"
+          },
+          "text" : {
+            "type" : "string",
+            "description" : "Text of the annotation",
+            "nullable" : true
+          },
+          "status" : {
+            "type" : "string",
+            "description" : "Status of the annotation",
+            "nullable" : true,
+            "enum" : [ "OK", "KO" ]
+          },
+          "properties" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "object",
+              "description" : "Properties of the annotation",
+              "nullable" : true
+            },
+            "description" : "Properties of the annotation",
+            "nullable" : true
+          },
+          "terms" : {
+            "type" : "array",
+            "description" : "Terms",
+            "nullable" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/Term"
+            }
+          }
+        }
+      },
+      "Boundary" : {
+        "required" : [ "end", "start" ],
+        "type" : "object",
+        "properties" : {
+          "start" : {
+            "type" : "integer",
+            "description" : "Start position in converted text",
+            "format" : "int32"
+          },
+          "end" : {
+            "type" : "integer",
+            "description" : "End position in converted text",
+            "format" : "int32"
+          },
+          "name" : {
+            "type" : "string",
+            "description" : "Name of the boundary",
+            "nullable" : true
+          }
+        }
+      },
+      "AnnotationResult" : {
+        "type" : "object",
+        "properties" : {
+          "annotations" : {
+            "type" : "array",
+            "description" : "List of annotations",
+            "nullable" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/Annotation"
+            }
+          },
+          "categories" : {
+            "type" : "array",
+            "description" : "List of categories",
+            "nullable" : true,
+            "items" : {
+              "$ref" : "#/components/schemas/Category"
+            }
+          }
+        }
+      },
+      "GenericXMLParameters" : {
+        "type" : "object",
+        "properties" : {
+          "sourceText" : {
+            "type" : "boolean",
+            "description" : "Set source text in conversion output",
+            "default" : false
+          },
+          "filenameIdentifier" : {
+            "type" : "boolean",
+            "description" : "Use filename as document identifier (fallback if no matching identifier XPath)",
+            "default" : true
+          },
+          "title" : {
+            "type" : "array",
+            "description" : "XPaths of nodes containing the title (first matching one is used, others are ignored)",
+            "items" : {
+              "type" : "string",
+              "description" : "XPaths of nodes containing the title (first matching one is used, others are ignored)"
+            }
+          },
+          "identifier" : {
+            "type" : "string",
+            "description" : "XPath of text node to be considered as the identifier"
+          },
+          "targets" : {
+            "type" : "array",
+            "description" : "XPaths of dom elements which text child nodes are to be analyzed (null for all elements)",
+            "items" : {
+              "type" : "string",
+              "description" : "XPaths of dom elements which text child nodes are to be analyzed (null for all elements)"
+            }
+          },
+          "boundaries" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "description" : "XPaths of dom elements used to generate boundaries, grouped by boundary type",
+              "items" : {
+                "type" : "string",
+                "description" : "XPaths of dom elements used to generate boundaries, grouped by boundary type"
+              }
+            },
+            "description" : "XPaths of dom elements used to generate boundaries, grouped by boundary type"
+          },
+          "ignored" : {
+            "type" : "array",
+            "description" : "XPaths of dom elements which text child nodes are to be ignored",
+            "items" : {
+              "type" : "string",
+              "description" : "XPaths of dom elements which text child nodes are to be ignored"
+            }
+          },
+          "sentences" : {
+            "type" : "array",
+            "description" : "XPaths of dom elements used to generate sentences",
+            "items" : {
+              "type" : "string",
+              "description" : "XPaths of dom elements used to generate sentences"
+            }
+          }
+        }
+      },
+      "TikaConverterParameters" : {
+        "type" : "object",
+        "properties" : {
+          "maxTextLength" : {
+            "type" : "integer",
+            "description" : "maximum length of output text (-1 means no limit)",
+            "format" : "int32"
+          }
+        }
+      },
+      "LabelFilterProcessorParameters" : {
+        "required" : [ "keepLabel" ],
+        "type" : "object",
+        "properties" : {
+          "keepLabel" : {
+            "type" : "string",
+            "description" : "Keep only annotations having this label"
+          }
+        }
+      },
+      "KeywordAnnotatorParameters" : {
+        "required" : [ "find" ],
+        "type" : "object",
+        "properties" : {
+          "find" : {
+            "type" : "string",
+            "description" : "Word or expression to be found in text"
+          },
+          "label" : {
+            "type" : "string",
+            "description" : "Label",
+            "default" : "something"
+          }
+        }
+      }
+    }
+  }
+}

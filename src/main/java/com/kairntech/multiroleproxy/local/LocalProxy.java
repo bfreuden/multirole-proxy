@@ -14,11 +14,14 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 
 import javax.net.ssl.SSLException;
 import java.net.ConnectException;
+import java.net.UnknownHostException;
 
+import static com.kairntech.multiroleproxy.local.MultiroleChangeNotifier.X_LOCAL_PROXY_ID_HEADER;
 import static com.kairntech.multiroleproxy.remote.RouterHandler.REGISTER_CLIENT_URI;
 
 public class LocalProxy {
 
+    private final String id;
     private ProxyConfig config;
     private EventLoopGroup group;
     private Channel channel;
@@ -27,6 +30,13 @@ public class LocalProxy {
 
     public LocalProxy(ProxyConfig config) {
         this.config = config;
+        String hostname;
+        try {
+            hostname = java.net.InetAddress.getLocalHost().getHostName();
+        } catch (UnknownHostException e) {
+            hostname = "unknown";
+        }
+        this.id = System.getProperty("user.name") + "@" + hostname;
     }
 
     public synchronized void start() {
@@ -41,7 +51,9 @@ public class LocalProxy {
             }
             this.bossGroup = new NioEventLoopGroup(1);
             this.group = new NioEventLoopGroup();
-            AdminServer adminServer = new AdminServer(bossGroup, group);
+            MultiroleChangeNotifier multiroleChangeNotifier = new MultiroleChangeNotifier(group, config, this.id);
+            Multiroles multiroles = new Multiroles(group, multiroleChangeNotifier);
+            AdminServer adminServer = new AdminServer(bossGroup, group, multiroles);
             adminServer.start();
             Bootstrap b = new Bootstrap();
             System.out.println("connecting to remote proxy at " + config.getHost() + ":" + config.getPort() + "...");
@@ -60,8 +72,13 @@ public class LocalProxy {
                                 HttpVersion.HTTP_1_1, HttpMethod.GET, REGISTER_CLIENT_URI, Unpooled.EMPTY_BUFFER);
                         request.headers().set(HttpHeaderNames.HOST, this.config.getHost() + ":" + this.config.getPort());
                         request.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
+                        request.headers().set(X_LOCAL_PROXY_ID_HEADER, this.id);
                         channel.writeAndFlush(request);
-                        channel.closeFuture().addListener(e -> this.channel = null);
+                        channel.closeFuture().addListener(e -> {
+                            this.channel = null;
+                            multiroleChangeNotifier.remoteProxyConnected(false);
+                        });
+                        multiroleChangeNotifier.remoteProxyConnected(true);
                     }
                 } catch (Exception e) {
                     if (displayErrorMessage) {
