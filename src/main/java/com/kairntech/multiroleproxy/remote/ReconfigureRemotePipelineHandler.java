@@ -5,6 +5,8 @@ import io.netty.channel.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static com.kairntech.multiroleproxy.util.MaybeLog.maybeLogFinest;
+
 public class ReconfigureRemotePipelineHandler extends ChannelOutboundHandlerAdapter {
 
     private static final Logger log = Logger.getLogger( ReconfigureRemotePipelineHandler.class.getSimpleName().replace("Handler", "") );
@@ -19,7 +21,7 @@ public class ReconfigureRemotePipelineHandler extends ChannelOutboundHandlerAdap
             writeFuture.addListener(e -> {
                 Peers peers = channel.attr(Peers.PEERS_ATTRIBUTE).get();
                 peers.peerConnected(channel);
-                if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "reconfiguring pipeline as http client + forwarding proxy: " + channel + " " + msg);
+                maybeLogFinest(log, () -> "reconfiguring pipeline as http client + forwarding proxy: " + channel + " " + msg);
                 RemoteProxyChannelInitializer.reconfigurePipeline(channel.pipeline());
             });
         } else {

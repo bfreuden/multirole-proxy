@@ -10,6 +10,8 @@ import io.netty.util.concurrent.GenericFutureListener;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static com.kairntech.multiroleproxy.util.MaybeLog.maybeLogFinest;
+
 class SimpleHttpServerChannelInitializer  extends ChannelInitializer<SocketChannel> {
 
 
@@ -22,11 +24,11 @@ class SimpleHttpServerChannelInitializer  extends ChannelInitializer<SocketChann
 
     @Override
     public void initChannel(SocketChannel ch) {
-        if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "server connection accepted: " + ch);
+        maybeLogFinest(log, () -> "server connection accepted: " + ch);
         ch.closeFuture().addListener(new GenericFutureListener<Future<? super Void>>() {
             @Override
             public void operationComplete(Future<? super Void> future) throws Exception {
-                if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "server connection closed: " + ch);
+                maybeLogFinest(log, () -> "server connection closed: " + ch);
             }
         });
         ChannelPipeline p = ch.pipeline();

@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static com.kairntech.multiroleproxy.util.MaybeLog.maybeLogFinest;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 public class ForwardRemoteRequestToMultiroleHandler extends ChannelInboundHandlerAdapter {
@@ -50,11 +51,11 @@ public class ForwardRemoteRequestToMultiroleHandler extends ChannelInboundHandle
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "receiving http content from remote proxy: " + ctx.channel() + " " + msg);
+        maybeLogFinest(log, () -> "receiving http content from remote proxy: " + ctx.channel() + " " + msg);
         synchronized (messages) {
             if (!connected && !connecting) {
 //            if (!connected.get() && !connecting.get()) {
-                if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "connecting to multirole: " + ctx.channel() + " " + msg);
+                maybeLogFinest(log, () -> "connecting to multirole: " + ctx.channel() + " " + msg);
                 connecting = true;
 //                connecting.set(true);
                 localChannel = ctx.channel();
@@ -63,15 +64,15 @@ public class ForwardRemoteRequestToMultiroleHandler extends ChannelInboundHandle
                         if (connectFuture.isSuccess()) {
                             multiroleChannel = connectFuture.channel();
                             multiroleChannel.closeFuture().addListener((ChannelFutureListener) future -> {
-                                if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "multirole channel closed: " + multiroleChannel);
+                                maybeLogFinest(log, () -> "multirole channel closed: " + multiroleChannel);
                                 if (!future.isSuccess()) {
                                     log.log(Level.WARNING, "multirole channel closed error", future.cause());
                                 }
                             });
-                            if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "connected to multirole with channel: " + multiroleChannel);
+                            maybeLogFinest(log, () -> "connected to multirole with channel: " + multiroleChannel);
                                 boolean endOfRequestReached = false;
                                 if (!messages.isEmpty())
-                                    if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "sending " + messages.size() + " queued message(s) to multirole: " + ctx.channel());
+                                    maybeLogFinest(log, () -> "sending " + messages.size() + " queued message(s) to multirole: " + ctx.channel());
                             for (HttpObject message : messages) {
                                 endOfRequestReached = writeMessageToMultiroleAndMaybeCloseChannel(message, true);
                             }
@@ -79,9 +80,9 @@ public class ForwardRemoteRequestToMultiroleHandler extends ChannelInboundHandle
                             if (!endOfRequestReached) {
 //                                    connected.set(true);
                                 connected = true;
-                                if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "end of messages not reached after un-queuing messages: " + multiroleChannel);
+                                maybeLogFinest(log, () -> "end of messages not reached after un-queuing messages: " + multiroleChannel);
                             } else {
-                                if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "end of messages reached after un-queuing messages: " + multiroleChannel);
+                                maybeLogFinest(log, () -> "end of messages reached after un-queuing messages: " + multiroleChannel);
                             }
                         } else {
                             notConnected = true;
@@ -97,15 +98,15 @@ public class ForwardRemoteRequestToMultiroleHandler extends ChannelInboundHandle
             }
             if (msg instanceof HttpObject) {
                 if (!connected) {
-                    if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "not connected to multirole yet, enqueuing message: " + ctx.channel() + " " + msg);
+                    maybeLogFinest(log, () -> "not connected to multirole yet, enqueuing message: " + ctx.channel() + " " + msg);
 //                if (!connected.get()) {
                     messages.add((HttpObject) msg);
                 } else if (notConnected) {
-                    if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "connection to multirole failed, discarding the message: " + ctx.channel() + " " + msg);
+                    maybeLogFinest(log, () -> "connection to multirole failed, discarding the message: " + ctx.channel() + " " + msg);
 //                } else if (!notConnected.get()) {
                     ReferenceCountUtil.release(msg);
                 } else {
-                    if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "connected to multirole, writing message directly: " + ctx.channel() + " " + msg);
+                    maybeLogFinest(log, () -> "connected to multirole, writing message directly: " + ctx.channel() + " " + msg);
                     writeMessageToMultiroleAndMaybeCloseChannel((HttpObject)msg, false);
                 }
             } else {
@@ -117,14 +118,14 @@ public class ForwardRemoteRequestToMultiroleHandler extends ChannelInboundHandle
     private boolean writeMessageToMultiroleAndMaybeCloseChannel(HttpObject message, Boolean accumulated) {
         ChannelFuture writeFuture = multiroleChannel.writeAndFlush(message);
         String qualifier = accumulated ? "" : "accumulated ";
-        if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "sending " +qualifier + "http message to multirole: " + multiroleChannel + " " + message);
+        maybeLogFinest(log, () -> "sending " +qualifier + "http message to multirole: " + multiroleChannel + " " + message);
         if (message instanceof LastHttpContent) {
-            if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "request send about to complete: " + multiroleChannel + " " + message);
+            maybeLogFinest(log, () -> "request send about to complete: " + multiroleChannel + " " + message);
             writeFuture
                     .addListener(new GenericFutureListener<Future<? super Void>>() {
                         @Override
                         public void operationComplete(Future<? super Void> future) {
-                            if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "request send complete, marking channel as 'not connected': " + multiroleChannel + " " + message);
+                            maybeLogFinest(log, () -> "request send complete, marking channel as 'not connected': " + multiroleChannel + " " + message);
                             connected = false;
                             connecting = false;
                             notConnected = false;

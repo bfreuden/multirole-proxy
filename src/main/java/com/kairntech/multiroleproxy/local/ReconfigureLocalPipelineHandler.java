@@ -9,6 +9,8 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static com.kairntech.multiroleproxy.util.MaybeLog.maybeLogFinest;
+
 public class ReconfigureLocalPipelineHandler extends SimpleChannelInboundHandler<Object> {
 
     private final Consumer<Channel> registrationCompleteCallback;
@@ -27,8 +29,8 @@ public class ReconfigureLocalPipelineHandler extends SimpleChannelInboundHandler
         if (msg instanceof HttpResponse) {
             HttpResponse response = (HttpResponse) msg;
             if (response.status().equals(HttpResponseStatus.OK)) {
-                if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "local proxy registered into remote proxy: " + ctx.channel() + " " + msg);
-                if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "waiting for next LastHttpContent to reconfigure pipeline : " + ctx.channel() + " " + msg);
+                maybeLogFinest(log, () -> "local proxy registered into remote proxy: " + ctx.channel() + " " + msg);
+                maybeLogFinest(log, () -> "waiting for next LastHttpContent to reconfigure pipeline : " + ctx.channel() + " " + msg);
                 registrationSuccessful = true;
             } else {
                 log.log(Level.SEVERE, "registration failed into remote proxy, closing channel: " + ctx.channel() + " " + msg);
@@ -36,7 +38,7 @@ public class ReconfigureLocalPipelineHandler extends SimpleChannelInboundHandler
             }
         } else if (msg instanceof LastHttpContent) {
             if (registrationSuccessful) {
-                if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "reconfiguring pipeline as an http server + multirole forwarding: " + ctx.channel() + " " + msg);
+                maybeLogFinest(log, () -> "reconfiguring pipeline as an http server + multirole forwarding: " + ctx.channel() + " " + msg);
                 LocalProxyChannelInitializer.reconfigurePipeline(ctx.pipeline(), group);
                 registrationCompleteCallback.accept(ctx.channel());
             } else {

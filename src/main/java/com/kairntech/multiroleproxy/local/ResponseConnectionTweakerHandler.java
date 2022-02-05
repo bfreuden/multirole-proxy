@@ -6,6 +6,8 @@ import io.netty.handler.codec.http.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static com.kairntech.multiroleproxy.util.MaybeLog.maybeLogFinest;
+
 public class ResponseConnectionTweakerHandler extends ChannelInboundHandlerAdapter {
 
     private boolean keepAlive;
@@ -33,20 +35,20 @@ public class ResponseConnectionTweakerHandler extends ChannelInboundHandlerAdapt
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         if (msg instanceof HttpResponse) {
-            if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "analyzing http response from multirole: " + ctx.channel() + " " + msg);
+            maybeLogFinest(log, () -> "analyzing http response from multirole: " + ctx.channel() + " " + msg);
             HttpResponse response = (HttpResponse) msg;
             if (keepAlive) {
-                if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "keep-alive request, changing response to keep-alive: " + ctx.channel());
+                maybeLogFinest(log, () -> "keep-alive request, changing response to keep-alive: " + ctx.channel());
                 response.headers().add(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
             } else {
-                if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "non keep-alive request detected, nothing to do");
+                maybeLogFinest(log, () -> "non keep-alive request detected, nothing to do");
             }
             String connectionHeader = response.headers().get(HttpHeaderNames.CONNECTION);
             if (!HttpHeaderValues.CLOSE.toString().equals(connectionHeader)) {
                 log.log(Level.SEVERE, "expecting a connection close response header, got: " + connectionHeader);
             }
         } else if ((msg instanceof HttpObject)){
-            if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "receiving content from multirole: " + ctx.channel() + " " + msg);
+            maybeLogFinest(log, () -> "receiving content from multirole: " + ctx.channel() + " " + msg);
         } else  {
             log.log(Level.WARNING, "unsupported message type: " + ctx.channel() + " " + msg);
         }

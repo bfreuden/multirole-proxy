@@ -11,6 +11,8 @@ import io.netty.util.concurrent.GenericFutureListener;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static com.kairntech.multiroleproxy.util.MaybeLog.maybeLogFinest;
+
 public class RemoteProxyChannelInitializer extends ChannelInitializer<SocketChannel> {
 
     private final SslContext sslCtx;
@@ -52,7 +54,7 @@ public class RemoteProxyChannelInitializer extends ChannelInitializer<SocketChan
 
     @Override
     public void initChannel(SocketChannel ch) {
-        if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "client connection accepted: " + ch);
+        maybeLogFinest(log, () -> "client connection accepted: " + ch);
         ch.closeFuture().addListener(new GenericFutureListener<Future<? super Void>>() {
             @Override
             public void operationComplete(Future<? super Void> future) {

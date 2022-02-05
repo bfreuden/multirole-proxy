@@ -11,6 +11,8 @@ import io.netty.util.concurrent.GenericFutureListener;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static com.kairntech.multiroleproxy.util.MaybeLog.maybeLogFinest;
+
 class SimpleHttpClientChannelInitializer extends ChannelInitializer<SocketChannel> {
 
     private static final Logger log = Logger.getLogger( SimpleHttpClientChannelInitializer.class.getSimpleName().replace("Handler", "") );
@@ -25,11 +27,11 @@ class SimpleHttpClientChannelInitializer extends ChannelInitializer<SocketChanne
 
     @Override
     protected void initChannel(SocketChannel ch) throws Exception {
-        if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "http client connected to" + host + ":" + port +" " + ch);
+        maybeLogFinest(log, () -> "http client connected to" + host + ":" + port +" " + ch);
         ch.closeFuture().addListener(new GenericFutureListener<Future<? super Void>>() {
             @Override
             public void operationComplete(Future<? super Void> future) throws Exception {
-                if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "http client connection closed: " + ch);
+                maybeLogFinest(log, () -> "http client connection closed: " + ch);
             }
         });
         ChannelPipeline p = ch.pipeline();

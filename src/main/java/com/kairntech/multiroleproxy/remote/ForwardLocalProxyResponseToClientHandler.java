@@ -10,6 +10,8 @@ import io.netty.util.AttributeKey;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static com.kairntech.multiroleproxy.util.MaybeLog.maybeLogFinest;
+
 public class ForwardLocalProxyResponseToClientHandler extends ChannelInboundHandlerAdapter {
 
     public static final AttributeKey<Channel> CLIENT_CHANNEL_ATTRIBUTE = AttributeKey.newInstance("clientChannel");
@@ -19,9 +21,9 @@ public class ForwardLocalProxyResponseToClientHandler extends ChannelInboundHand
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         if (msg instanceof HttpObject) {
-            if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "sending data back to the client...: " + ctx.channel() + " " + msg);
+            maybeLogFinest(log, () -> "sending data back to the client...: " + ctx.channel() + " " + msg);
             Channel clientChannel = ctx.channel().attr(CLIENT_CHANNEL_ATTRIBUTE).get();
-            if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "client channel is...: " + clientChannel);
+            maybeLogFinest(log, () -> "client channel is...: " + clientChannel);
             //TODO handle write error (with logging at least)
             if (msg instanceof LastHttpContent) {
                 clientChannel.writeAndFlush(msg);

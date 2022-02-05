@@ -14,6 +14,8 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static com.kairntech.multiroleproxy.util.MaybeLog.maybeLogFinest;
+
 public class LocalProxyChannelInitializer extends ChannelInitializer<SocketChannel> {
 
     private final SslContext sslCtx;
@@ -49,7 +51,7 @@ public class LocalProxyChannelInitializer extends ChannelInitializer<SocketChann
 
     @Override
     public void initChannel(SocketChannel ch) {
-        if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "connection established with remote proxy: " + ch);
+        maybeLogFinest(log, () -> "connection established with remote proxy: " + ch);
         ch.closeFuture().addListener(new GenericFutureListener<Future<? super Void>>() {
             @Override
             public void operationComplete(Future<? super Void> future) {

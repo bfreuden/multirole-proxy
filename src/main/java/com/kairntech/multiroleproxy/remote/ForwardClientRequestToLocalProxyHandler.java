@@ -12,6 +12,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static com.kairntech.multiroleproxy.remote.ForwardLocalProxyResponseToClientHandler.CLIENT_CHANNEL_ATTRIBUTE;
+import static com.kairntech.multiroleproxy.util.MaybeLog.maybeLogFinest;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 public class ForwardClientRequestToLocalProxyHandler extends ChannelInboundHandlerAdapter {
@@ -38,8 +39,8 @@ public class ForwardClientRequestToLocalProxyHandler extends ChannelInboundHandl
 //                }
                 Channel peerChannel = peers.getPeerChannel();
                 if (peerChannel != null) {
-                    if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "sending client data to local proxy...: " + ctx.channel() + " " + msg);
-                    if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "... local proxy channel is: " + peerChannel);
+                    maybeLogFinest(log, () -> "sending client data to local proxy...: " + ctx.channel() + " " + msg);
+                    maybeLogFinest(log, () -> "... local proxy channel is: " + peerChannel);
                     peerChannel.attr(CLIENT_CHANNEL_ATTRIBUTE).set(ctx.channel());
                     peerChannel.writeAndFlush(msg);
                 } else {
@@ -53,12 +54,12 @@ public class ForwardClientRequestToLocalProxyHandler extends ChannelInboundHandl
             }
         } else {
             ReferenceCountUtil.release(msg);
-            if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "ignoring message not targeting this handler: " + ctx.channel() + " " + msg);
+            maybeLogFinest(log, () -> "ignoring message not targeting this handler: " + ctx.channel() + " " + msg);
         }
     }
 
     private void write503Response(ChannelHandlerContext ctx) {
-        if (log.isLoggable(Level.FINEST)) log.log(Level.FINEST, "sending 503 response to client: " + ctx.channel());
+        maybeLogFinest(log, () -> "sending 503 response to client: " + ctx.channel());
         FullHttpResponse response = new DefaultFullHttpResponse(
                 HTTP_1_1, HttpResponseStatus.valueOf(503, "no peer registered"),
                 Unpooled.EMPTY_BUFFER);
