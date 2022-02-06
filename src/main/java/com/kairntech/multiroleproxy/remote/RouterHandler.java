@@ -1,5 +1,6 @@
 package com.kairntech.multiroleproxy.remote;
 
+import com.kairntech.multiroleproxy.util.Clients;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -15,6 +16,8 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static com.kairntech.multiroleproxy.remote.Peers.CLIENTS_ATTRIBUTE;
+import static com.kairntech.multiroleproxy.remote.Peers.REQUEST_UUID_ATTRIBUTE;
 import static com.kairntech.multiroleproxy.remote.RouterHandler.RouteType.*;
 import static com.kairntech.multiroleproxy.util.MaybeLog.maybeLogFinest;
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
@@ -43,7 +46,6 @@ public class RouterHandler extends ChannelInboundHandlerAdapter {
         if (msg instanceof HttpRequest) {
             Channel channel = ctx.channel();
             Channel ch = channel;
-            Peers peers = ch.attr(Peers.PEERS_ATTRIBUTE).get();
             maybeLogFinest(log, () -> "handling request: " + channel + " " + msg);
             SocketAddress remoteAddress = channel.remoteAddress();
             if (remoteAddress instanceof InetSocketAddress) {
@@ -75,15 +77,24 @@ public class RouterHandler extends ChannelInboundHandlerAdapter {
                 maybeLogFinest(log, () -> "'openapi spec' request detected");
                 channel.attr(ROUTE_TYPE_ATTRIBUTE).set(OPENAPI);
             } else {
-                maybeLogFinest(log, () -> "'proxy-able' request detected, removing pipeline reconfigurer and http object aggregator");
-                request.headers().add(X_REQUEST_UUID_HEADER, UUID.randomUUID());
+                maybeLogFinest(log, () -> "'proxy-able' request detected, removing http object aggregator");
                 channel.attr(ROUTE_TYPE_ATTRIBUTE).set(PROXY);
-                channel.attr(Peers.PEER_ATTRIBUTE).set(peers.getPeer(uri));
+                channel.pipeline().remove(HttpObjectAggregator.class); // handle chunks
+
+                // register client
+                if (ch.attr(REQUEST_UUID_ATTRIBUTE).get() == null) {
+                    String requestUUID = UUID.randomUUID().toString();
+                    ch.attr(REQUEST_UUID_ATTRIBUTE).set(requestUUID);
+                    request.headers().add(X_REQUEST_UUID_HEADER, requestUUID);
+                    Clients clients = ch.attr(CLIENTS_ATTRIBUTE).get();
+                    clients.clientConnected(requestUUID, ctx.channel());
+                }
             }
             if (!registerClient) {
+                maybeLogFinest(log, () -> "non 'register client' request detected, removing pipeline reconfigurer");
                 channel.pipeline().remove(ReconfigureRemotePipelineHandler.class); // don't reorganize the pipeline
-                channel.pipeline().remove(HttpObjectAggregator.class); // handle chunks
             }
+
         }
         ctx.fireChannelRead(msg);
     }

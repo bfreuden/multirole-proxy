@@ -12,8 +12,6 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Objects;
 
-import static com.kairntech.multiroleproxy.remote.ForwardLocalProxyResponseToClientHandler.CLIENT_CHANNEL_ATTRIBUTE;
-
 public class Sequencer {
 
     public Channel getUpstreamChannel() {
@@ -109,7 +107,6 @@ public class Sequencer {
                 tuple.notifyUpstreamUnexpectedlyClosed();
         } else if (inProgress == null || inProgress == tuple) {
             // first arrived has the right to write into the sequenced channel
-            upstream.attr(CLIENT_CHANNEL_ATTRIBUTE).set(tuple.channel);
             inProgress = tuple;
             boolean lastWritten = writeMessage(message);
             if (lastWritten) {

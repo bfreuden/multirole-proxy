@@ -1,5 +1,6 @@
 package com.kairntech.multiroleproxy.remote;
 
+import com.kairntech.multiroleproxy.util.Clients;
 import com.kairntech.multiroleproxy.util.OpenAPISpecParser;
 import com.kairntech.multiroleproxy.util.Sequencer;
 import io.netty.buffer.ByteBuf;
@@ -16,8 +17,9 @@ import java.util.HashMap;
 
 public class Peers {
 
+    public static final AttributeKey<String> REQUEST_UUID_ATTRIBUTE = AttributeKey.newInstance("requestUUID");
+    public static final AttributeKey<Clients> CLIENTS_ATTRIBUTE = AttributeKey.newInstance("clients");
     public static final AttributeKey<Peers> PEERS_ATTRIBUTE = AttributeKey.newInstance("peers");
-    public static final AttributeKey<Peer> PEER_ATTRIBUTE = AttributeKey.newInstance("peer");
     public static final AttributeKey<String> PEERS_ID_ATTRIBUTE = AttributeKey.newInstance("peerId");
     private OpenAPISpecParser.OpenAPISpec spec;
     private HashMap<String, Peer> id2peers = new HashMap<>();
@@ -53,4 +55,6 @@ public class Peers {
             return id2peers.values().iterator().next();
         }
     }
+
+
 }

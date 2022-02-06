@@ -1,12 +1,11 @@
 package com.kairntech.multiroleproxy.remote;
 
 
+import com.kairntech.multiroleproxy.util.Clients;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.*;
 import io.netty.handler.ssl.SslContext;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -17,12 +16,14 @@ public class RemoteProxyChannelInitializer extends ChannelInitializer<SocketChan
 
     private final SslContext sslCtx;
     private final Peers peers;
+    private final Clients clients;
 
     private static final Logger log = Logger.getLogger( RemoteProxyChannelInitializer.class.getSimpleName());
 
-    public RemoteProxyChannelInitializer(SslContext sslCtx, Peers peers) {
+    public RemoteProxyChannelInitializer(SslContext sslCtx, Peers peers, Clients clients) {
         this.sslCtx = sslCtx;
         this.peers = peers;
+        this.clients = clients;
     }
 
     public static ChannelHandler[] handlers() {
@@ -68,14 +69,11 @@ public class RemoteProxyChannelInitializer extends ChannelInitializer<SocketChan
             }
         });
         ChannelPipeline p = ch.pipeline();
-        addAttributes(ch, peers);
+        ch.attr(Peers.PEERS_ATTRIBUTE).set(peers);
+        ch.attr(Peers.CLIENTS_ATTRIBUTE).set(clients);
         ChannelHandler[] handlers = handlers();
         for (ChannelHandler handler: handlers)
             p.addLast(handler);
-    }
-
-    public static void addAttributes(Channel ch, Peers peers) {
-        ch.attr(Peers.PEERS_ATTRIBUTE).set(peers);
     }
 
 }

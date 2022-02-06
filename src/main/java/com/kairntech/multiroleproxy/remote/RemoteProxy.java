@@ -1,6 +1,7 @@
 package com.kairntech.multiroleproxy.remote;
 
 import com.kairntech.multiroleproxy.ProxyConfig;
+import com.kairntech.multiroleproxy.util.Clients;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
@@ -16,10 +17,12 @@ public final class RemoteProxy {
 
     private final ProxyConfig config;
     private final Peers peers;
+    private final Clients clients;
 
     public RemoteProxy(ProxyConfig config) {
         this.config = config;
         this.peers = new Peers();
+        this.clients = new Clients();
     }
 
     public void start() throws Exception {
@@ -39,7 +42,7 @@ public final class RemoteProxy {
             b.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
                     .handler(new LoggingHandler(LogLevel.INFO))
-                    .childHandler(new RemoteProxyChannelInitializer(sslCtx, peers));
+                    .childHandler(new RemoteProxyChannelInitializer(sslCtx, peers, clients));
 
             Channel ch = b.bind(config.getPort()).sync().channel();
 

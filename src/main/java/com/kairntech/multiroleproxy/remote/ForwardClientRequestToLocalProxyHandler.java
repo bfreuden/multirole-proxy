@@ -2,7 +2,6 @@ package com.kairntech.multiroleproxy.remote;
 
 import com.kairntech.multiroleproxy.util.Sequencer;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -12,7 +11,6 @@ import io.netty.util.ReferenceCountUtil;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static com.kairntech.multiroleproxy.remote.ForwardLocalProxyResponseToClientHandler.CLIENT_CHANNEL_ATTRIBUTE;
 import static com.kairntech.multiroleproxy.util.MaybeLog.maybeLogFinest;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
@@ -29,14 +27,19 @@ public class ForwardClientRequestToLocalProxyHandler extends ChannelInboundHandl
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        Peer peer = ctx.channel().attr(Peers.PEER_ATTRIBUTE).get();
         RouterHandler.RouteType routeType = ctx.channel().attr(RouterHandler.ROUTE_TYPE_ATTRIBUTE).get();
         if (routeType == RouterHandler.RouteType.PROXY) {
             if (msg instanceof HttpObject) {
                 HttpObject message = (HttpObject) msg;
-                if (peer != null && msg instanceof HttpRequest) {
-                    sequencer = peer.getSequencer();
-                    handlers = new Sequencer.ChannelHandlers(ctx.channel(), () -> write503Response(ctx, "connection lost with local proxy"), null);
+                if (msg instanceof HttpRequest) {
+                    HttpRequest request = (HttpRequest) msg;
+                    // find target peer
+                    Peers peers = ctx.channel().attr(Peers.PEERS_ATTRIBUTE).get();
+                    Peer peer = peers.getPeer(request.uri());
+                    if (peer != null) {
+                        sequencer = peer.getSequencer();
+                        handlers = new Sequencer.ChannelHandlers(ctx.channel(), () -> write503Response(ctx, "connection lost with local proxy"), null);
+                    }
                 }
                 if (sequencer != null) {
                     maybeLogFinest(log, () -> "sending client data to local proxy...: " + ctx.channel() + " " + msg);
@@ -48,7 +51,7 @@ public class ForwardClientRequestToLocalProxyHandler extends ChannelInboundHandl
                 }
                 if (msg instanceof LastHttpContent) {
                     if (sequencer == null)
-                        write503Response(ctx, "no local proxy registered for this request");
+                        write503Response(ctx, "no peer registered");
                     sequencer = null;
                     handlers = null;
                 }
