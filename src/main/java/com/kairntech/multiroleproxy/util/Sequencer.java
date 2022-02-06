@@ -1,7 +1,7 @@
 package com.kairntech.multiroleproxy.util;
 
 import io.netty.channel.Channel;
-import io.netty.handler.codec.http.HttpMessage;
+import io.netty.handler.codec.http.HttpObject;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.LastHttpContent;
@@ -12,7 +12,13 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Objects;
 
+import static com.kairntech.multiroleproxy.remote.ForwardLocalProxyResponseToClientHandler.CLIENT_CHANNEL_ATTRIBUTE;
+
 public class Sequencer {
+
+    public Channel getUpstreamChannel() {
+        return this.upstream;
+    }
 
     public static class ChannelHandlers {
 
@@ -65,7 +71,7 @@ public class Sequencer {
     }
 
     private Channel upstream;
-    private HashMap<ChannelHandlers, LinkedList<HttpMessage>> bufferedMessages = new HashMap<>();
+    private HashMap<ChannelHandlers, LinkedList<HttpObject>> bufferedMessages = new HashMap<>();
     private ChannelHandlers inProgress;
     private boolean closed;
 
@@ -82,8 +88,8 @@ public class Sequencer {
         if (inProgress != null)
             inProgress.notifyUpstreamUnexpectedlyClosed();
         // signal pending streams and drop buffered data
-        for (Map.Entry<ChannelHandlers, LinkedList<HttpMessage>> entry : bufferedMessages.entrySet()) {
-            for (HttpMessage message : entry.getValue()) {
+        for (Map.Entry<ChannelHandlers, LinkedList<HttpObject>> entry : bufferedMessages.entrySet()) {
+            for (HttpObject message : entry.getValue()) {
                 // drop buffered data
                 ReferenceCountUtil.release(message);
                 // signal pending stream that upstream is closed
@@ -94,7 +100,7 @@ public class Sequencer {
         }
     }
 
-    public synchronized void write(ChannelHandlers tuple, HttpMessage message) {
+    public synchronized void write(ChannelHandlers tuple, HttpObject message) {
         if (closed) {
             // simply drop the message
             ReferenceCountUtil.release(message);
@@ -103,6 +109,7 @@ public class Sequencer {
                 tuple.notifyUpstreamUnexpectedlyClosed();
         } else if (inProgress == null || inProgress == tuple) {
             // first arrived has the right to write into the sequenced channel
+            upstream.attr(CLIENT_CHANNEL_ATTRIBUTE).set(tuple.channel);
             inProgress = tuple;
             boolean lastWritten = writeMessage(message);
             if (lastWritten) {
@@ -117,8 +124,8 @@ public class Sequencer {
             // pause reads
             tuple.channel.config().setAutoRead(false);
             // buffer incoming messages
-            LinkedList<HttpMessage> httpMessages = bufferedMessages.computeIfAbsent(tuple, (c) -> new LinkedList<>());
-            httpMessages.add(message);
+            LinkedList<HttpObject> HttpObjects = bufferedMessages.computeIfAbsent(tuple, (c) -> new LinkedList<>());
+            HttpObjects.add(message);
         }
     }
 
@@ -129,15 +136,15 @@ public class Sequencer {
             // this will be the new in progress
             ChannelHandlers tuple = bufferedMessages.keySet().iterator().next();
             // send its buffered messages
-            LinkedList<HttpMessage> messages = bufferedMessages.remove(tuple);
-            for (HttpMessage bufferedMessage : messages)
+            LinkedList<HttpObject> messages = bufferedMessages.remove(tuple);
+            for (HttpObject bufferedMessage : messages)
                 write(tuple, bufferedMessage);
             // resume reads
             tuple.channel.config().setAutoRead(true);
         }
     }
 
-    private boolean writeMessage(HttpMessage message) {
+    private boolean writeMessage(HttpObject message) {
         boolean lastWritten = false;
         if (message instanceof HttpRequest) {
             if (message instanceof LastHttpContent) {

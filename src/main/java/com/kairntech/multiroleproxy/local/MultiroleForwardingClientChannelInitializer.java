@@ -27,8 +27,8 @@ public class MultiroleForwardingClientChannelInitializer extends ChannelInitiali
         if (sslCtx != null) {
             p.addLast(sslCtx.newHandler(ch.alloc()));
         }
-        ResponseConnectionTweakerHandler responseConnectionTweaker = new ResponseConnectionTweakerHandler();
-        ResponseConnectionTweakerHandler.RequestConnectionTweaker requestConnectionTweaker = responseConnectionTweaker.requestConnectionTweaker;
+        ResponseTweakerHandler responseConnectionTweaker = new ResponseTweakerHandler();
+        ResponseTweakerHandler.RequestTweakerHandler requestConnectionTweaker = responseConnectionTweaker.requestConnectionTweaker;
 
         p.addLast(new HttpClientCodec());
         p.addLast(responseConnectionTweaker);
