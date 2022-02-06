@@ -49,6 +49,7 @@ public class RegisterPeerHandler extends ChannelInboundHandlerAdapter {
             } else {
                 log.log(Level.WARNING, "unsupported message: " + msg);
             }
+            ReferenceCountUtil.release(msg);
         } else {
             // forward message to the next
             ctx.fireChannelRead(msg);
