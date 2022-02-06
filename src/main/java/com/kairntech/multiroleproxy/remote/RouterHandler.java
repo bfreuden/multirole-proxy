@@ -63,7 +63,9 @@ public class RouterHandler extends ChannelInboundHandlerAdapter {
                 send100Continue(ctx);
             }
             String uri = request.uri();
+            boolean registerClient = false;
             if (uri.equals(REGISTER_CLIENT_URI)) {
+                registerClient = true;
                 maybeLogFinest(log, () -> "'register client' request detected");
                 channel.attr(ROUTE_TYPE_ATTRIBUTE).set(REGISTER_CLIENT);
             } else if (uri.equals(REGISTER_SPEC_URI)) {
@@ -75,10 +77,12 @@ public class RouterHandler extends ChannelInboundHandlerAdapter {
             } else {
                 maybeLogFinest(log, () -> "'proxy-able' request detected, removing pipeline reconfigurer and http object aggregator");
                 request.headers().add(X_REQUEST_UUID_HEADER, UUID.randomUUID());
-                channel.pipeline().remove(ReconfigureRemotePipelineHandler.class); // don't reorganize the pipeline
-                channel.pipeline().remove(HttpObjectAggregator.class); // handle chunks
                 channel.attr(ROUTE_TYPE_ATTRIBUTE).set(PROXY);
                 channel.attr(Peers.PEER_ATTRIBUTE).set(peers.getPeer(uri));
+            }
+            if (!registerClient) {
+                channel.pipeline().remove(ReconfigureRemotePipelineHandler.class); // don't reorganize the pipeline
+                channel.pipeline().remove(HttpObjectAggregator.class); // handle chunks
             }
         }
         ctx.fireChannelRead(msg);
