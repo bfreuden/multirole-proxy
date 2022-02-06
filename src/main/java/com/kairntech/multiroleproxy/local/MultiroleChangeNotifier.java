@@ -64,14 +64,14 @@ public class MultiroleChangeNotifier {
             log.info("unpublishing multirole spec " + multirole);
         else
             log.info("publishing multirole spec " + multirole);
-        ByteBuf content = spec != null ? Unpooled.copiedBuffer((CharSequence) spec, StandardCharsets.UTF_8): Unpooled.copiedBuffer(new byte[0]);
+        ByteBuf content = spec != null ? Unpooled.copiedBuffer(spec.jsonString, StandardCharsets.UTF_8): Unpooled.copiedBuffer(new byte[0]);
         SimpleHttpClient.SimpleHttpClientRequest request = remoteProxyClient.request(HttpMethod.POST, RouterHandler.REGISTER_SPEC_URI, content);
         if (spec != null)
             request.request.headers().add(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON);
         request.request.headers().add(HttpHeaderNames.CONTENT_LENGTH, content.readableBytes());
         request.request.headers().add(X_LOCAL_PROXY_ID_HEADER, localProxyId);
         request.request.headers().add(X_MULTIROLE_ID_HEADER, multirole.getId());
-        request.request.headers().add(X_MULTIROLE_SPEC_MD5_HEADER, spec == null ? spec.md5sum : "");
+        request.request.headers().add(X_MULTIROLE_SPEC_MD5_HEADER, spec != null ? spec.md5sum : "");
         request.send(future -> {
             if (future.success()) {
                 log.info("multirole spec successfully published " + multirole);

@@ -4,6 +4,7 @@ import com.kairntech.multiroleproxy.ProxyConfig;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -55,8 +56,6 @@ public class LocalProxy {
             Multiroles multiroles = new Multiroles(group, multiroleChangeNotifier);
             AdminServer adminServer = new AdminServer(bossGroup, group, multiroles);
             adminServer.start();
-            if (true)
-                return;
             Bootstrap b = new Bootstrap();
             System.out.println("connecting to remote proxy at " + config.getHost() + ":" + config.getPort() + "...");
             b.group(group)
@@ -75,12 +74,17 @@ public class LocalProxy {
                         request.headers().set(HttpHeaderNames.HOST, this.config.getHost() + ":" + this.config.getPort());
                         request.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
                         request.headers().set(X_LOCAL_PROXY_ID_HEADER, this.id);
-                        channel.writeAndFlush(request);
+                        channel.writeAndFlush(request).addListener((ChannelFutureListener)channelFuture -> {
+                            if (channelFuture.isSuccess()) {
+                                multiroleChangeNotifier.remoteProxyConnected(true);
+                            } else {
+                                multiroleChangeNotifier.remoteProxyConnected(false);
+                            }
+                        });
                         channel.closeFuture().addListener(e -> {
                             this.channel = null;
                             multiroleChangeNotifier.remoteProxyConnected(false);
                         });
-                        multiroleChangeNotifier.remoteProxyConnected(true);
                     }
                 } catch (Exception e) {
                     if (displayErrorMessage) {

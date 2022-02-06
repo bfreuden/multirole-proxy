@@ -7,6 +7,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
 
+import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -49,8 +50,10 @@ class SimpleHttpServerHandler extends SimpleChannelInboundHandler<Object> {
                     try {
                         FullHttpResponse response = handler.apply(new SimpleHttpRequest(request, queryStringDecoder));
                         writeResponse(ctx, response);
+                    } catch (IllegalArgumentException e) {
+                        writeResponse(ctx, BAD_REQUEST, e.getMessage());
                     } catch (Throwable t) {
-                        writeEmptyResponse(ctx, INTERNAL_SERVER_ERROR);
+                        writeResponse(ctx, INTERNAL_SERVER_ERROR, t.getMessage());
                     }
                 }
             }
@@ -60,6 +63,14 @@ class SimpleHttpServerHandler extends SimpleChannelInboundHandler<Object> {
 
     }
 
+    private void writeResponse(ChannelHandlerContext ctx, HttpResponseStatus status, String message) {
+        FullHttpResponse response = new DefaultFullHttpResponse(
+                HTTP_1_1, status, Unpooled.copiedBuffer(message, StandardCharsets.UTF_8));
+        response.headers().set(HttpHeaderNames.CONTENT_LENGTH, response.content().readableBytes());
+        response.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
+        ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+
+    }
     private void writeEmptyResponse(ChannelHandlerContext ctx, HttpResponseStatus status) {
         FullHttpResponse response = new DefaultFullHttpResponse(
                 HTTP_1_1, status);

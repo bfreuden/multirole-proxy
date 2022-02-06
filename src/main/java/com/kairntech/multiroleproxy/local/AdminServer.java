@@ -35,6 +35,11 @@ public class AdminServer extends SimpleHttpServer {
             if (host == null)
                 host = "localhost";
             String port = (String) parse.get("port");
+            if (port == null)
+                throw new IllegalArgumentException("missing port argument");
+//            String paths = (String) parse.get("paths");
+//            if (paths == null)
+//                throw new IllegalArgumentException("missing paths argument");
             multiroles.addServer(host, Integer.parseInt(port));
             return textResponse("server successfully added");
         });

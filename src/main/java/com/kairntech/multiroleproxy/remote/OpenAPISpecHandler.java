@@ -36,7 +36,7 @@ public class OpenAPISpecHandler extends ChannelInboundHandlerAdapter {
                 if (!request.decoderResult().isSuccess()) {
                     writeResponse(ctx, BAD_REQUEST, "http decoder error");
                 } else {
-                    ByteBuf spec = peers.getSpec();
+                    ByteBuf spec = peers.getSpec(ctx.channel().alloc());
                     writeResponse(ctx, OK, spec, HttpHeaderValues.APPLICATION_JSON);
                 }
             } else {

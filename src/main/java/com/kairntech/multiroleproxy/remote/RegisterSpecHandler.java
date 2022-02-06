@@ -31,7 +31,7 @@ public class RegisterSpecHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         Peers peers = ctx.channel().attr(Peers.PEERS_ATTRIBUTE).get();
         RouterHandler.RouteType routeType = ctx.channel().attr(RouterHandler.ROUTE_TYPE_ATTRIBUTE).get();
-        if (routeType == RouterHandler.RouteType.REGISTER_CLIENT) {
+        if (routeType == RouterHandler.RouteType.REGISTER_SPEC) {
             if (msg instanceof FullHttpRequest) {
                 FullHttpRequest request = (FullHttpRequest) msg;
                 if (!request.decoderResult().isSuccess()) {
