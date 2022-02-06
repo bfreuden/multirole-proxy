@@ -73,16 +73,13 @@ public class Multirole {
             this.bootstrap  = new Bootstrap()
                     .group(group)
                     .channel(NioSocketChannel.class)
-                    .handler(new HttpResponseDecoder());
+                    .handler(new ConnectionLostWatcherChannelInitializer());
             multiroleClient = new SimpleHttpClient(group, host, port);
         }
         maybeLogFinest(log, () -> "fetching openapi spec from  " + host + ":" + port);
         multiroleClient.get("/openapi.json").send(handler -> {
             if (handler.success()) {
-                if (schedule != null) {
-                    schedule.cancel(false);
-                    schedule = null;
-                }
+                maybeCancelReconnectionSchedule();
                 FullHttpResponse response = handler.result();
                 if (response.status().equals(HttpResponseStatus.OK)) {
                     try {
@@ -112,10 +109,21 @@ public class Multirole {
                     log.warning("failed to connect to multirole: " + host + ":" + port);
                 status = Status.stopped;
                 // if connection failed, try again later
-                if (schedule == null)
-                    schedule = group.schedule(this::connect, 30, TimeUnit.SECONDS);
+                maybeScheduleReconnection();
             }
         });
+    }
+
+    private synchronized void maybeCancelReconnectionSchedule() {
+        if (schedule != null) {
+            schedule.cancel(false);
+            schedule = null;
+        }
+    }
+
+    private synchronized void maybeScheduleReconnection() {
+        if (schedule == null)
+            schedule = group.schedule(this::connect, 2, TimeUnit.SECONDS);
     }
 
     public void notifyRemoved() {
@@ -135,8 +143,7 @@ public class Multirole {
                 });
             } else {
                 // if connection failed, try again later
-                if (schedule == null)
-                    schedule = group.schedule(Multirole.this::connect, 30, TimeUnit.SECONDS);
+                maybeScheduleReconnection();
             }
         });
     }
