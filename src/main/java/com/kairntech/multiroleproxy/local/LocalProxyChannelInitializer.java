@@ -51,13 +51,8 @@ public class LocalProxyChannelInitializer extends ChannelInitializer<SocketChann
 
     @Override
     public void initChannel(SocketChannel ch) {
-        maybeLogFinest(log, () -> "connection established with remote proxy: " + ch);
-        ch.closeFuture().addListener(new GenericFutureListener<Future<? super Void>>() {
-            @Override
-            public void operationComplete(Future<? super Void> future) {
-                log.log(Level.FINEST, "remote proxy connection closed");
-            }
-        });
+        maybeLogFinest(log, () -> "trying connection with remote proxy: " + ch);
+        ch.closeFuture().addListener(future -> log.log(Level.FINEST, "remote proxy connection closed"));
         ChannelPipeline p = ch.pipeline();
 
 //        p.addLast(new ReadTimeoutHandler(5)); // not for debug

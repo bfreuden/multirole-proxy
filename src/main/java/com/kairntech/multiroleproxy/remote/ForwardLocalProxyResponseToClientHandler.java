@@ -16,7 +16,7 @@ public class ForwardLocalProxyResponseToClientHandler extends ChannelInboundHand
 
     public static final AttributeKey<Channel> CLIENT_CHANNEL_ATTRIBUTE = AttributeKey.newInstance("clientChannel");
 
-    private static final Logger log = Logger.getLogger( ForwardLocalProxyResponseToClientHandler.class.getSimpleName().replace("Handler", "") );
+    private static final Logger log = Logger.getLogger(ForwardLocalProxyResponseToClientHandler.class.getSimpleName().replace("Handler", ""));
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
