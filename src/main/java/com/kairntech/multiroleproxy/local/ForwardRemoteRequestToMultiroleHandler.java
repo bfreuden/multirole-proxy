@@ -47,7 +47,7 @@ public class ForwardRemoteRequestToMultiroleHandler extends ChannelInboundHandle
         public void channelRead(ChannelHandlerContext ctx, Object msg) {
             synchronized (messages) {
                 if (!connected && !connecting) {
-                    maybeLogFinest(log, () -> "connecting to multirole: " + ctx.channel() + " " + msg);
+                    maybeLogFinest(log, () -> "connecting to multirole: " + requestId + " " + ctx.channel() + " " + msg);
                     connecting = true;
                     b.connect(multirole.getHost(), multirole.getPort()).addListener((ChannelFutureListener) connectFuture -> {
                         synchronized (messages) {
@@ -55,24 +55,24 @@ public class ForwardRemoteRequestToMultiroleHandler extends ChannelInboundHandle
                                 multiroleChannel = connectFuture.channel();
                                 multiroleChannel.attr(MULTIROLE_ATTRIBUTE).set(multirole);
                                 multiroleChannel.closeFuture().addListener((ChannelFutureListener) future -> {
-                                    maybeLogFinest(log, () -> "multirole channel closed: " + multiroleChannel);
+                                    maybeLogFinest(log, () -> "multirole channel closed: " + requestId + " " + multiroleChannel);
                                     if (!future.isSuccess()) {
                                         log.log(Level.WARNING, "multirole channel closed error", future.cause());
                                     }
                                 });
-                                maybeLogFinest(log, () -> "connected to multirole with channel: " + multiroleChannel);
+                                maybeLogFinest(log, () -> "connected to multirole with channel: " +  requestId + " " + multiroleChannel);
                                 boolean endOfRequestReached = false;
                                 if (!messages.isEmpty())
-                                    maybeLogFinest(log, () -> "sending " + messages.size() + " queued message(s) to multirole: " + ctx.channel());
+                                    maybeLogFinest(log, () -> "sending " + messages.size() + " queued message(s) to multirole: " + requestId + " " + ctx.channel());
                                 for (HttpObject message : messages) {
                                     endOfRequestReached = writeMessageToMultiroleAndMaybeCloseChannel(message, true);
                                 }
                                 messages.clear();
                                 if (!endOfRequestReached) {
                                     connected = true;
-                                    maybeLogFinest(log, () -> "end of messages not reached after un-queuing messages: " + multiroleChannel);
+                                    maybeLogFinest(log, () -> "end of messages not reached after un-queuing messages: " + requestId + " " + multiroleChannel);
                                 } else {
-                                    maybeLogFinest(log, () -> "end of messages reached after un-queuing messages: " + multiroleChannel);
+                                    maybeLogFinest(log, () -> "end of messages reached after un-queuing messages: " + requestId + " " + multiroleChannel);
                                 }
                             } else {
                                 notConnected = true;
@@ -86,33 +86,33 @@ public class ForwardRemoteRequestToMultiroleHandler extends ChannelInboundHandle
                         }
                     });
                 }
-            }
-            if (multirole != null) {
-                if (msg instanceof HttpObject) {
-                    if (!connected) {
-                        maybeLogFinest(log, () -> "not connected to multirole yet, enqueuing message: " + ctx.channel() + " " + msg);
-                        messages.add((HttpObject) msg);
-                    } else if (notConnected) {
-                        maybeLogFinest(log, () -> "connection to multirole failed, discarding the message: " + ctx.channel() + " " + msg);
-                        ReferenceCountUtil.release(msg);
+                if (multirole != null) {
+                    if (msg instanceof HttpObject) {
+                        if (!connected) {
+                            maybeLogFinest(log, () -> "not connected to multirole yet, enqueuing message: " + requestId + " " + ctx.channel() + " " + msg);
+                            messages.add((HttpObject) msg);
+                        } else if (notConnected) {
+                            maybeLogFinest(log, () -> "connection to multirole failed, discarding the message: " + requestId + " " + ctx.channel() + " " + msg);
+                            ReferenceCountUtil.release(msg);
+                        } else {
+                            maybeLogFinest(log, () -> "connected to multirole, writing message directly: " + requestId + " " + ctx.channel() + " " + msg);
+                            writeMessageToMultiroleAndMaybeCloseChannel((HttpObject)msg, false);
+                        }
                     } else {
-                        maybeLogFinest(log, () -> "connected to multirole, writing message directly: " + ctx.channel() + " " + msg);
-                        writeMessageToMultiroleAndMaybeCloseChannel((HttpObject)msg, false);
+                        ReferenceCountUtil.release(msg);
                     }
-                } else {
-                    ReferenceCountUtil.release(msg);
                 }
             }
         }
 
-        private boolean writeMessageToMultiroleAndMaybeCloseChannel(HttpObject message, Boolean accumulated) {
+        private boolean writeMessageToMultiroleAndMaybeCloseChannel(HttpObject message, boolean accumulated) {
             ChannelFuture writeFuture = multiroleChannel.writeAndFlush(message);
             String qualifier = accumulated ? "" : "accumulated ";
-            maybeLogFinest(log, () -> "sending " +qualifier + "http message to multirole: " + multiroleChannel + " " + message);
+            maybeLogFinest(log, () -> "sending " + qualifier + "http message to multirole: " + requestId + " " + multiroleChannel + " " + message);
             if (message instanceof LastHttpContent) {
-                maybeLogFinest(log, () -> "request send about to complete: " + multiroleChannel + " " + message);
+                maybeLogFinest(log, () -> "request send about to complete: " + requestId + " "  + multiroleChannel + " " + message);
                 writeFuture
-                        .addListener(future -> maybeLogFinest(log, () -> "request send complete, marking channel as 'not connected': " + multiroleChannel + " " + message));
+                        .addListener(future -> maybeLogFinest(log, () -> "request send complete, marking channel as 'not connected': " + requestId + " " + multiroleChannel + " " + message));
                 doneCallback.run();
                 return true;
             }
@@ -126,7 +126,7 @@ public class ForwardRemoteRequestToMultiroleHandler extends ChannelInboundHandle
 
     private List<RemoteProxyRequest> remoteRequests = new ArrayList<>();
     private RemoteProxyRequest remoteRequest;
-    private String requestId;
+    private String requestId1;
     private Multirole multirole;
 
     private final EventLoopGroup group;
@@ -151,29 +151,29 @@ public class ForwardRemoteRequestToMultiroleHandler extends ChannelInboundHandle
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        maybeLogFinest(log, () -> "receiving http content from remote proxy: " + ctx.channel() + " " + msg);
+        maybeLogFinest(log, () -> "receiving http content from remote proxy: " + requestId1 + " " + ctx.channel() + " " + msg);
         if (msg instanceof HttpRequest) {
             HttpRequest request = (HttpRequest) msg;
             String multiroleId = request.headers().get(X_MULTIROLE_ID_HEADER);
             if (multiroleId == null)
-                log.severe( "no " + X_MULTIROLE_ID_HEADER + " header in http request from remote proxy: " + ctx.channel() + " " + msg);
-            requestId = request.headers().get(X_REQUEST_UUID_HEADER);
-            if (requestId == null)
-                log.severe( "no " + X_REQUEST_UUID_HEADER + " header in http request from remote proxy: " + ctx.channel() + " " + msg);
+                log.severe( "no " + X_MULTIROLE_ID_HEADER + " header in http request from remote proxy: " + requestId1 + " " + ctx.channel() + " " + msg);
+            requestId1 = request.headers().get(X_REQUEST_UUID_HEADER);
+            if (requestId1 == null)
+                log.severe( "no " + X_REQUEST_UUID_HEADER + " header in http request from remote proxy: " + " " + ctx.channel() + " " + msg);
             Multiroles multiroles = ctx.channel().attr(MULTIROLES_ATTRIBUTE).get();
             multirole = multiroles.getServer(multiroleId);
             if (multirole == null)
-                log.severe( "no multirole server with id " + X_MULTIROLE_ID_HEADER + " multiroleId to serve http request from remote proxy: " + ctx.channel() + " " + msg);
-            if (requestId != null && multirole != null) {
-                remoteRequest = new RemoteProxyRequest(b, requestId, multirole);
+                log.severe( "no multirole server with id " + X_MULTIROLE_ID_HEADER + " multiroleId to serve http request from remote proxy: " + requestId1 + " " + ctx.channel() + " " + msg);
+            if (requestId1 != null && multirole != null) {
+                remoteRequest = new RemoteProxyRequest(b, requestId1, multirole);
                 remoteRequest.setDoneCallback(() -> remoteRequests.remove(remoteRequest));
             }
         }
         if (multirole == null) {
-            maybeLogFinest(log, () -> "no multirole, discarding the message: " + ctx.channel() + " " + msg);
+            maybeLogFinest(log, () -> "no multirole, discarding the message: " + requestId1 + " " + ctx.channel() + " " + msg);
             ReferenceCountUtil.release(msg);
             if (msg instanceof LastHttpContent) {
-                write503Response(ctx, requestId);
+                write503Response(ctx, requestId1);
             }
         } else {
             remoteRequest.channelRead(ctx, msg);
