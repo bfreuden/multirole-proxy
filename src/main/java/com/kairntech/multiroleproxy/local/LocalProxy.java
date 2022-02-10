@@ -1,6 +1,7 @@
 package com.kairntech.multiroleproxy.local;
 
 import com.kairntech.multiroleproxy.ProxyConfig;
+import com.kairntech.multiroleproxy.util.Sequencer;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -18,6 +19,7 @@ import java.net.ConnectException;
 import java.net.UnknownHostException;
 
 import static com.kairntech.multiroleproxy.local.MultiroleChangeNotifier.X_LOCAL_PROXY_ID_HEADER;
+import static com.kairntech.multiroleproxy.local.Multiroles.MULTIROLES_ATTRIBUTE;
 import static com.kairntech.multiroleproxy.remote.RouterHandler.REGISTER_CLIENT_URI;
 
 public class LocalProxy {
@@ -69,6 +71,8 @@ public class LocalProxy {
                 try {
                     if (channel == null) {
                         Channel channel = b.connect(this.config.getHost(), this.config.getPort()).sync().channel();
+                        multiroles.setSequencer(new Sequencer(channel));
+                        channel.attr(MULTIROLES_ATTRIBUTE).set(multiroles);
                         HttpRequest request = new DefaultFullHttpRequest(
                                 HttpVersion.HTTP_1_1, HttpMethod.GET, REGISTER_CLIENT_URI, Unpooled.EMPTY_BUFFER);
                         request.headers().set(HttpHeaderNames.HOST, this.config.getHost() + ":" + this.config.getPort());

@@ -1,6 +1,7 @@
 package com.kairntech.multiroleproxy.local;
 
 import com.kairntech.multiroleproxy.util.OpenAPISpecParser;
+import com.kairntech.multiroleproxy.util.Sequencer;
 import com.kairntech.multiroleproxy.util.SimpleHttpClient;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFutureListener;
@@ -34,6 +35,7 @@ public class Multirole {
     private volatile String md5sum = "";
     private Bootstrap bootstrap;
     private ScheduledFuture schedule;
+    private Sequencer sequencer;
 
     public enum Status {
         not_known_yet,
@@ -42,12 +44,25 @@ public class Multirole {
         not_a_multirole
     }
 
+    public static String getId(String host, int port) {
+        return host + ":" + port;
+    }
+
+
     public Multirole(EventLoopGroup group, MultiroleChangeNotifier multiroleChangeNotifier, String host, int port) {
         this.multiroleChangeNotifier = multiroleChangeNotifier;
-        this.id = host + ":" + port;
+        this.id = getId(host, port);
         this.host = host;
         this.port = port;
         this.group = group;
+    }
+
+    public void setSequencer(Sequencer sequencer) {
+        this.sequencer = sequencer;
+    }
+
+    public Sequencer getSequencer() {
+        return this.sequencer;
     }
 
     public String getId() {
@@ -153,14 +168,13 @@ public class Multirole {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Multirole multirole = (Multirole) o;
-        return port == multirole.port && host.equals(multirole.host);
+        return id.equals(multirole.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(host, port);
+        return Objects.hash(id);
     }
-
 
     @Override
     public String toString() {

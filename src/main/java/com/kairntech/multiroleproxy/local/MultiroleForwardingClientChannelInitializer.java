@@ -1,22 +1,17 @@
 package com.kairntech.multiroleproxy.local;
 
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.ssl.SslContext;
 
-import java.util.function.Supplier;
-
 public class MultiroleForwardingClientChannelInitializer extends ChannelInitializer<SocketChannel> {
 
     private final SslContext sslCtx;
-    private final Supplier<Channel> replyChannel;
 
-    public MultiroleForwardingClientChannelInitializer(Supplier<Channel> replyChannel, SslContext sslCtx) {
+    public MultiroleForwardingClientChannelInitializer(SslContext sslCtx) {
         this.sslCtx = sslCtx;
-        this.replyChannel = replyChannel;
     }
 
     @Override
@@ -33,7 +28,7 @@ public class MultiroleForwardingClientChannelInitializer extends ChannelInitiali
         p.addLast(new HttpClientCodec());
         p.addLast(responseConnectionTweaker);
         p.addLast(requestConnectionTweaker);
-        p.addLast(new ForwardMultiroleResponseToRemoteHandler(replyChannel));
+        p.addLast(new ForwardMultiroleResponseToRemoteHandler());
 
 //        p.addLast(new HttpRequestEncoder());
 

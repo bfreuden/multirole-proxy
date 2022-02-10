@@ -48,11 +48,11 @@ public class Peers {
         return buffer;
     }
 
-    public synchronized Peer getPeer(String uri) {
+    public synchronized Pair<Peer, String> getPeerAndMultiroleID(String uri) {
         if (id2peers.isEmpty()) {
             return null;
         } else {
-            return id2peers.values().iterator().next();
+            return new Pair(id2peers.values().iterator().next(), "*");
         }
     }
 

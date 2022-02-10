@@ -1,39 +1,45 @@
 package com.kairntech.multiroleproxy.local;
 
+import com.kairntech.multiroleproxy.util.Sequencer;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.HttpObject;
+import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.LastHttpContent;
+import io.netty.util.ReferenceCountUtil;
 
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static com.kairntech.multiroleproxy.local.Multiroles.MULTIROLE_ATTRIBUTE;
+import static com.kairntech.multiroleproxy.util.MaybeLog.maybeLogFinest;
+
 public class ForwardMultiroleResponseToRemoteHandler extends ChannelInboundHandlerAdapter {
 
-    private final Supplier<Channel>  replyChannel;
-
     private static final Logger log = Logger.getLogger( ForwardMultiroleResponseToRemoteHandler.class.getSimpleName().replace("Handler", "") );
-
-    public ForwardMultiroleResponseToRemoteHandler(Supplier<Channel> replyChannel) {
-        this.replyChannel = replyChannel;
-    }
+    private boolean upstreamClosed = false;
+    private Sequencer.ChannelHandlers tuple;
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        if (msg instanceof HttpObject) {
-            System.out.println("writing data back to remote: " + ctx.channel() + " " + msg);
-            Channel channel = replyChannel.get();
-            if (msg instanceof LastHttpContent) {
-                channel.writeAndFlush(msg);
-            } else {
-                channel.write(msg);
-            }
+        if (upstreamClosed) {
+            maybeLogFinest(log, () -> "remote proxy channel closed, discarding the message: " + ctx.channel() + " " + msg);
+            ReferenceCountUtil.release(msg);
         } else {
-            log.log(Level.WARNING, "unsupported message: " + msg);
-            // FIXME release msg!!
-            ctx.fireChannelRead(msg);
+            if (msg instanceof HttpObject) {
+                if (msg instanceof HttpResponse)
+                    tuple = new Sequencer.ChannelHandlers(ctx.channel(), () -> upstreamClosed = true, ctx::close);
+                HttpObject message = (HttpObject) msg;
+                Multirole multirole = ctx.channel().attr(MULTIROLE_ATTRIBUTE).get();
+                System.out.println("writing data back to remote: " + ctx.channel() + " " + msg);
+                Sequencer sequencer = multirole.getSequencer();
+                sequencer.write(tuple, message);
+            } else {
+                log.log(Level.WARNING, "unsupported message: " + msg);
+                ReferenceCountUtil.release(msg);
+            }
         }
     }
 
