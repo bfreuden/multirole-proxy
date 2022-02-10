@@ -32,6 +32,7 @@ public class ForwardLocalProxyResponseToClientHandler extends ChannelInboundHand
             if (msg instanceof HttpResponse) {
                 HttpResponse response = (HttpResponse)msg;
                 expectedContentLength = response.headers().get(HttpHeaderNames.CONTENT_LENGTH);
+                writtenContentLength = 0;
                 maybeLogFinest(log, () -> "received request to sent back to the client (contentLength=" + expectedContentLength + ")...: " + ctx.channel() + " " + msg);
                 String requestUUID = response.headers().get(X_REQUEST_UUID_HEADER);
                 if (requestUUID != null)
