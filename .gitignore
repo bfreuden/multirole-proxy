@@ -2,3 +2,4 @@
 /target/
 multirole-proxy.iml
 /*.json
+/logs/
