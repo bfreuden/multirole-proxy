@@ -46,12 +46,16 @@ public class ResponseTweakerHandler extends ChannelInboundHandlerAdapter {
             maybeLogFinest(log, () -> "analyzing http response from multirole: " + ctx.channel() + " " + msg);
             HttpResponse response = (HttpResponse) msg;
             response.headers().add(X_REQUEST_UUID_HEADER, requestUUID);
-            if (keepAlive) {
-                maybeLogFinest(log, () -> "keep-alive request, changing response to keep-alive: " + ctx.channel());
-                response.headers().add(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
-            } else {
-                maybeLogFinest(log, () -> "non keep-alive request detected, nothing to do");
-            }
+            maybeLogFinest(log, () -> "forcing connection http response header to close: " + ctx.channel());
+            response.headers().remove("connection");
+            response.headers().remove("Connection");
+            response.headers().add(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
+//            if (keepAlive) {
+//                maybeLogFinest(log, () -> "keep-alive request, changing response to keep-alive: " + ctx.channel());
+//                response.headers().add(HttpHeaderNames.CONNECTION, HttpHeaderValues.KEEP_ALIVE);
+//            } else {
+//                maybeLogFinest(log, () -> "non keep-alive request detected, nothing to do");
+//            }
             String connectionHeader = response.headers().get(HttpHeaderNames.CONNECTION);
             if (!HttpHeaderValues.CLOSE.toString().equals(connectionHeader)) {
                 log.log(Level.SEVERE, "expecting a connection close response header, got: " + connectionHeader);

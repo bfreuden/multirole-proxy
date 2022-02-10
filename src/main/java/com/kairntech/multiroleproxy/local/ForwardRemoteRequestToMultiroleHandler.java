@@ -1,6 +1,5 @@
 package com.kairntech.multiroleproxy.local;
 
-import com.kairntech.multiroleproxy.util.Sequencer;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
@@ -22,59 +21,32 @@ import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 public class ForwardRemoteRequestToMultiroleHandler extends ChannelInboundHandlerAdapter {
 
-    private final EventLoopGroup group;
-    private final Bootstrap b;
-    private final List<HttpObject> messages = new ArrayList<>();
-    private volatile Channel multiroleChannel;
-    private volatile boolean connecting = false;
-    private volatile boolean connected = false;
-    private volatile boolean notConnected = false;
+    public static class RemoteProxyRequest {
 
-    private static final Logger log = Logger.getLogger( ForwardRemoteRequestToMultiroleHandler.class.getSimpleName().replace("Handler", "") );
-    private Multirole multirole;
-    private String requestId;
+        private final List<HttpObject> messages = new ArrayList<>();
+        private final Bootstrap b;
+        private volatile Channel multiroleChannel;
+        private volatile boolean connecting = false;
+        private volatile boolean connected = false;
+        private volatile boolean notConnected = false;
+        private Multirole multirole;
+        private String requestId;
+        private Runnable doneCallback;
 
-    public ForwardRemoteRequestToMultiroleHandler(EventLoopGroup group) {
-        this.group = group;
-        this.b = new Bootstrap()
-                .group(group)
-                .channel(NioSocketChannel.class)
-                .handler(new MultiroleForwardingClientChannelInitializer( null));
-    }
+        public RemoteProxyRequest(Bootstrap b, String requestId, Multirole multirole) {
+            this.requestId = requestId;
+            this.multirole = multirole;
+            this.b = b;
+        }
 
-    @Override
-    public void channelUnregistered(ChannelHandlerContext ctx) {
-        for (Object message : messages)
-            ReferenceCountUtil.release(message);
-        ctx.fireChannelUnregistered();
-    }
+        public void releaseMessages() {
+            for (Object message : messages)
+                ReferenceCountUtil.release(message);
+        }
 
-    @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        maybeLogFinest(log, () -> "receiving http content from remote proxy: " + ctx.channel() + " " + msg);
-        synchronized (messages) {
-            if (!connected && !connecting) {
-                if (msg instanceof HttpRequest) {
-                    HttpRequest request = (HttpRequest) msg;
-                    String multiroleId = request.headers().get(X_MULTIROLE_ID_HEADER);
-                    if (multiroleId == null)
-                        log.severe( "no " + X_MULTIROLE_ID_HEADER + " header in http request from remote proxy: " + ctx.channel() + " " + msg);
-                    requestId = request.headers().get(X_REQUEST_UUID_HEADER);
-                    if (requestId == null)
-                        log.severe( "no " + X_REQUEST_UUID_HEADER + " header in http request from remote proxy: " + ctx.channel() + " " + msg);
-                    Multiroles multiroles = ctx.channel().attr(MULTIROLES_ATTRIBUTE).get();
-                    multirole = multiroles.getServer(multiroleId);
-                    if (multirole == null)
-                        log.severe( "no multirole server with id " + X_MULTIROLE_ID_HEADER + " multiroleId to serve http request from remote proxy: " + ctx.channel() + " " + msg);
-                }
-                if (multirole == null) {
-                    maybeLogFinest(log, () -> "no multirole, discarding the message: " + ctx.channel() + " " + msg);
-                    ReferenceCountUtil.release(msg);
-                    if (msg instanceof LastHttpContent) {
-                        write503Response(ctx);
-                        resetState();
-                    }
-                } else {
+        public void channelRead(ChannelHandlerContext ctx, Object msg) {
+            synchronized (messages) {
+                if (!connected && !connecting) {
                     maybeLogFinest(log, () -> "connecting to multirole: " + ctx.channel() + " " + msg);
                     connecting = true;
                     b.connect(multirole.getHost(), multirole.getPort()).addListener((ChannelFutureListener) connectFuture -> {
@@ -108,7 +80,8 @@ public class ForwardRemoteRequestToMultiroleHandler extends ChannelInboundHandle
                                 for (HttpObject message : messages) {
                                     ReferenceCountUtil.release(message);
                                 }
-                                write503Response(ctx);
+                                write503Response(ctx, requestId);
+                                doneCallback.run();
                             }
                         }
                     });
@@ -131,32 +104,84 @@ public class ForwardRemoteRequestToMultiroleHandler extends ChannelInboundHandle
                 }
             }
         }
-    }
 
-    private boolean writeMessageToMultiroleAndMaybeCloseChannel(HttpObject message, Boolean accumulated) {
-        ChannelFuture writeFuture = multiroleChannel.writeAndFlush(message);
-        String qualifier = accumulated ? "" : "accumulated ";
-        maybeLogFinest(log, () -> "sending " +qualifier + "http message to multirole: " + multiroleChannel + " " + message);
-        if (message instanceof LastHttpContent) {
-            maybeLogFinest(log, () -> "request send about to complete: " + multiroleChannel + " " + message);
-            resetState();
-            writeFuture
-                    .addListener(future -> maybeLogFinest(log, () -> "request send complete, marking channel as 'not connected': " + multiroleChannel + " " + message));
-            return true;
+        private boolean writeMessageToMultiroleAndMaybeCloseChannel(HttpObject message, Boolean accumulated) {
+            ChannelFuture writeFuture = multiroleChannel.writeAndFlush(message);
+            String qualifier = accumulated ? "" : "accumulated ";
+            maybeLogFinest(log, () -> "sending " +qualifier + "http message to multirole: " + multiroleChannel + " " + message);
+            if (message instanceof LastHttpContent) {
+                maybeLogFinest(log, () -> "request send about to complete: " + multiroleChannel + " " + message);
+                writeFuture
+                        .addListener(future -> maybeLogFinest(log, () -> "request send complete, marking channel as 'not connected': " + multiroleChannel + " " + message));
+                doneCallback.run();
+                return true;
+            }
+            return false;
         }
-        return false;
+
+        public void setDoneCallback(Runnable doneCallback) {
+            this.doneCallback = doneCallback;
+        }
     }
 
-    private void resetState() {
-        connecting = false;
-        connected = false;
-        notConnected = false;
-        multiroleChannel = null;
-        multirole = null;
-        requestId = null;
+    private List<RemoteProxyRequest> remoteRequests = new ArrayList<>();
+    private RemoteProxyRequest remoteRequest;
+    private String requestId;
+    private Multirole multirole;
+
+    private final EventLoopGroup group;
+    private final Bootstrap b;
+
+    private static final Logger log = Logger.getLogger( ForwardRemoteRequestToMultiroleHandler.class.getSimpleName().replace("Handler", "") );
+
+    public ForwardRemoteRequestToMultiroleHandler(EventLoopGroup group) {
+        this.group = group;
+        this.b = new Bootstrap()
+                .group(group)
+                .channel(NioSocketChannel.class)
+                .handler(new MultiroleForwardingClientChannelInitializer( null));
     }
 
-    private void write503Response(ChannelHandlerContext ctx) {
+    @Override
+    public void channelUnregistered(ChannelHandlerContext ctx) {
+        for (RemoteProxyRequest request: remoteRequests)
+            request.releaseMessages();
+        ctx.fireChannelUnregistered();
+    }
+
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+        maybeLogFinest(log, () -> "receiving http content from remote proxy: " + ctx.channel() + " " + msg);
+        if (msg instanceof HttpRequest) {
+            HttpRequest request = (HttpRequest) msg;
+            String multiroleId = request.headers().get(X_MULTIROLE_ID_HEADER);
+            if (multiroleId == null)
+                log.severe( "no " + X_MULTIROLE_ID_HEADER + " header in http request from remote proxy: " + ctx.channel() + " " + msg);
+            requestId = request.headers().get(X_REQUEST_UUID_HEADER);
+            if (requestId == null)
+                log.severe( "no " + X_REQUEST_UUID_HEADER + " header in http request from remote proxy: " + ctx.channel() + " " + msg);
+            Multiroles multiroles = ctx.channel().attr(MULTIROLES_ATTRIBUTE).get();
+            multirole = multiroles.getServer(multiroleId);
+            if (multirole == null)
+                log.severe( "no multirole server with id " + X_MULTIROLE_ID_HEADER + " multiroleId to serve http request from remote proxy: " + ctx.channel() + " " + msg);
+            if (requestId != null && multirole != null) {
+                remoteRequest = new RemoteProxyRequest(b, requestId, multirole);
+                remoteRequest.setDoneCallback(() -> remoteRequests.remove(remoteRequest));
+            }
+        }
+        if (multirole == null) {
+            maybeLogFinest(log, () -> "no multirole, discarding the message: " + ctx.channel() + " " + msg);
+            ReferenceCountUtil.release(msg);
+            if (msg instanceof LastHttpContent) {
+                write503Response(ctx, requestId);
+            }
+        } else {
+            remoteRequest.channelRead(ctx, msg);
+        }
+
+    }
+
+    private static void write503Response(ChannelHandlerContext ctx, String requestId) {
         FullHttpResponse response = new DefaultFullHttpResponse(
                 HTTP_1_1, HttpResponseStatus.valueOf(503, "local proxy can't connect to multirole"),
                 Unpooled.EMPTY_BUFFER);

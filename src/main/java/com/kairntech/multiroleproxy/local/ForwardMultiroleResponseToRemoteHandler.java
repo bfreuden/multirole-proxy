@@ -33,7 +33,7 @@ public class ForwardMultiroleResponseToRemoteHandler extends ChannelInboundHandl
                     tuple = new Sequencer.ChannelHandlers(ctx.channel(), () -> upstreamClosed = true, ctx::close);
                 HttpObject message = (HttpObject) msg;
                 Multirole multirole = ctx.channel().attr(MULTIROLE_ATTRIBUTE).get();
-                System.out.println("writing data back to remote: " + ctx.channel() + " " + msg);
+                maybeLogFinest(log, () -> "writing data back to remote: " + ctx.channel() + " " + msg);
                 Sequencer sequencer = multirole.getSequencer();
                 sequencer.write(tuple, message);
             } else {
