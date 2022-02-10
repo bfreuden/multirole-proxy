@@ -106,17 +106,19 @@ public class ForwardRemoteRequestToMultiroleHandler extends ChannelInboundHandle
         }
 
         private boolean writeMessageToMultiroleAndMaybeCloseChannel(HttpObject message, boolean accumulated) {
-            ChannelFuture writeFuture = multiroleChannel.writeAndFlush(message);
             String qualifier = accumulated ? "" : "accumulated ";
-            maybeLogFinest(log, () -> "sending " + qualifier + "http message to multirole: " + requestId + " " + multiroleChannel + " " + message);
             if (message instanceof LastHttpContent) {
-                maybeLogFinest(log, () -> "request send about to complete: " + requestId + " "  + multiroleChannel + " " + message);
+                ChannelFuture writeFuture = multiroleChannel.writeAndFlush(message);
+                maybeLogFinest(log, () -> "sending last " + qualifier + "http message to multirole: " + requestId + " " + multiroleChannel + " " + message);
                 writeFuture
                         .addListener(future -> maybeLogFinest(log, () -> "request send complete, marking channel as 'not connected': " + requestId + " " + multiroleChannel + " " + message));
                 doneCallback.run();
                 return true;
+            } else {
+                maybeLogFinest(log, () -> "sending " + qualifier + "http message to multirole: " + requestId + " " + multiroleChannel + " " + message);
+                multiroleChannel.write(message);
+                return false;
             }
-            return false;
         }
 
         public void setDoneCallback(Runnable doneCallback) {
