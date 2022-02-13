@@ -58,9 +58,13 @@ public class AdminServer extends SimpleHttpServer {
 
     public void start() {
 
-        addHandler(Pattern.compile(Pattern.quote("/status")), HttpMethod.GET, (req) -> textResponse(
-                channel == null ? (connectionThread == null ? "disconnected from remote proxy" : "disconnected from remote proxy (reconnection in progress)") : "connected to remote proxy"
-        ));
+        addHandler(Pattern.compile(Pattern.quote("/status")), HttpMethod.GET, (req) -> {
+            StringJoiner joiner = new StringJoiner("\r\n");
+            writeListMultiroles(joiner);
+            joiner.add("");
+            joiner.add(channel == null ? (connectionThread == null ? "disconnected from remote proxy" : "disconnected from remote proxy (reconnection in progress)") : "connected to remote proxy");
+            return textResponse(joiner.toString());
+        });
 
         addHandler(Pattern.compile(Pattern.quote("/connect")), HttpMethod.POST, (req) -> {
             JSONObject parse = parseJsonObjectBody(req);
@@ -151,17 +155,9 @@ public class AdminServer extends SimpleHttpServer {
         });
 
         addHandler(Pattern.compile(Pattern.quote("/list-multiroles")), HttpMethod.GET, (req) -> {
-            HashSet<Multirole> servers = multiroles.getServers();
-            if (servers.isEmpty()) {
-                return textResponse("no multirole servers");
-            } else {
-                StringJoiner joiner = new StringJoiner("\r\n");
-                joiner.add("multirole servers:");
-                for (Multirole server : servers) {
-                    joiner.add("- " + server.getHost() + ":" + server.getPort() + " paths=" + server.getPaths() + " status: " + server.getStatus().name().replace('_', ' '));
-                }
-                return textResponse(joiner.toString());
-            }
+            StringJoiner joiner = new StringJoiner("\r\n");
+            writeListMultiroles(joiner);
+            return textResponse(joiner.toString());
         });
 
         listenLocally().addListener((ChannelFutureListener)channelFuture -> {
@@ -172,6 +168,18 @@ public class AdminServer extends SimpleHttpServer {
                 System.err.println("admin server not listening to requests");
             }
         });
+    }
+
+    private void writeListMultiroles(StringJoiner joiner) {
+        HashSet<Multirole> servers = multiroles.getServers();
+        if (servers.isEmpty()) {
+            joiner.add("no multirole servers");
+        } else {
+            joiner.add("multirole servers:");
+            for (Multirole server : servers) {
+                joiner.add("- " + server.getHost() + ":" + server.getPort() + " paths=" + server.getPaths() + " status: " + server.getStatus().name().replace('_', ' '));
+            }
+        }
     }
 
     private JSONObject parseJsonObjectBody(SimpleHttpRequest req) {

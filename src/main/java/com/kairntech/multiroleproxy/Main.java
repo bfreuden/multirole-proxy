@@ -9,8 +9,8 @@ public class Main {
     public static void main(String[] args) {
         CommandLineParser parser = new DefaultParser();
         Options options = new Options();
-        options.addOption("p", "port", true, "remote proxy port");
-        options.addOption("h", "host", true, "remote proxy host");
+        options.addOption("remote-port", true, "remote proxy port");
+        options.addOption("remote-host", true, "remote proxy host");
         ProxyConfig config = null;
         try {
             CommandLine cmd = parser.parse(options, args);
@@ -23,13 +23,14 @@ public class Main {
             if (target.equals("remote")) {
                 RemoteProxy remoteProxy = new RemoteProxy(
                         new ProxyConfig()
-                                .setPort(Integer.parseInt(cmd.getOptionValue("p", "9080")))
+                                .setPort(Integer.parseInt(cmd.getOptionValue("remote-port", "9080")))
                 );
                 remoteProxy.start();
             } else if (target.equals("local")) {
                 LocalProxy localProxy = new LocalProxy(
                         new ProxyConfig()
-                                .setPort(Integer.parseInt(cmd.getOptionValue("p", "9080")))
+                                .setHost(cmd.getOptionValue("remote-host", "localhost"))
+                                .setPort(Integer.parseInt(cmd.getOptionValue("remote-port", "9080")))
                 );
                 localProxy.start();
             } else {
