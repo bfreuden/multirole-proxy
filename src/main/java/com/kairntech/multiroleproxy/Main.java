@@ -20,14 +20,14 @@ public class Main {
 //                System.err.println("no target provided on command-line, expected one of 'remote', 'local'");
 //                System.exit(1);
 //            }
-            String target = remainingArgs[0];
-            if (remainingArgs.length == 1 && target.equals("remote")) {
+            String target = remainingArgs.length == 1 ? remainingArgs[0] : null;
+            if ("remote".equals(target)) {
                 RemoteProxy remoteProxy = new RemoteProxy(
                         new ProxyConfig()
                                 .setPort(Integer.parseInt(cmd.getOptionValue("port", "9080")))
                 );
                 remoteProxy.start();
-            } else if (remainingArgs.length == 1 && target.equals("local")) {
+            } else if ("local".equals(target)) {
                 LocalProxy localProxy = new LocalProxy(
                         new ProxyConfig()
                                 .setHost(cmd.getOptionValue("host", "localhost"))
