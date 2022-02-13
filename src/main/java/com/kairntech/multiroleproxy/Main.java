@@ -1,5 +1,6 @@
 package com.kairntech.multiroleproxy;
 
+import com.kairntech.multiroleproxy.command.Command;
 import com.kairntech.multiroleproxy.local.LocalProxy;
 import com.kairntech.multiroleproxy.remote.RemoteProxy;
 import org.apache.commons.cli.*;
@@ -9,33 +10,32 @@ public class Main {
     public static void main(String[] args) {
         CommandLineParser parser = new DefaultParser();
         Options options = new Options();
-        options.addOption("remote-port", true, "remote proxy port");
-        options.addOption("remote-host", true, "remote proxy host");
+        options.addOption("port", true, "remote proxy port");
+        options.addOption("host", true, "remote proxy host");
         ProxyConfig config = null;
         try {
             CommandLine cmd = parser.parse(options, args);
             String[] remainingArgs = cmd.getArgs();
-            if (remainingArgs.length == 0) {
-                System.err.println("no target provided on command-line, expected one of 'remote' or 'local'");
-                System.exit(1);
-            }
+//            if (remainingArgs.length == 0) {
+//                System.err.println("no target provided on command-line, expected one of 'remote', 'local'");
+//                System.exit(1);
+//            }
             String target = remainingArgs[0];
-            if (target.equals("remote")) {
+            if (remainingArgs.length == 1 && target.equals("remote")) {
                 RemoteProxy remoteProxy = new RemoteProxy(
                         new ProxyConfig()
-                                .setPort(Integer.parseInt(cmd.getOptionValue("remote-port", "9080")))
+                                .setPort(Integer.parseInt(cmd.getOptionValue("port", "9080")))
                 );
                 remoteProxy.start();
-            } else if (target.equals("local")) {
+            } else if (remainingArgs.length == 1 && target.equals("local")) {
                 LocalProxy localProxy = new LocalProxy(
                         new ProxyConfig()
-                                .setHost(cmd.getOptionValue("remote-host", "localhost"))
-                                .setPort(Integer.parseInt(cmd.getOptionValue("remote-port", "9080")))
+                                .setHost(cmd.getOptionValue("host", "localhost"))
+                                .setPort(Integer.parseInt(cmd.getOptionValue("port", "9080")))
                 );
                 localProxy.start();
             } else {
-                System.err.println("unknown target: " + target + ", expected one of 'remote' or 'local'");
-                System.exit(1);
+                Command.main(remainingArgs);
             }
         } catch (ParseException e) {
             System.err.println("unable to parse command-line: " + e.getMessage());

@@ -1,5 +1,6 @@
 package com.kairntech.multiroleproxy.util;
 
+import com.kairntech.multiroleproxy.remote.RegisterSpecHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -10,6 +11,8 @@ import io.netty.handler.codec.http.*;
 import io.netty.util.AttributeKey;
 
 import java.util.function.Consumer;
+
+import static com.kairntech.multiroleproxy.remote.RouterHandler.REGISTER_SPEC_URI;
 
 public class SimpleHttpClient {
 
@@ -29,6 +32,8 @@ public class SimpleHttpClient {
             this.method = method;
             this.uri = uri;
             this.request = content == null ? new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, method, uri) :  new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, method, uri, content);
+            if (content != null && !uri.equals(REGISTER_SPEC_URI)) // WHY ????
+                request.headers().add(HttpHeaderNames.CONTENT_LENGTH, content.readableBytes());
             this.request.headers().add(HttpHeaderNames.HOST, host+":"+port);
         }
 

@@ -141,7 +141,7 @@ public class AdminServer extends SimpleHttpServer {
 //            if (paths == null)
 //                throw new IllegalArgumentException("missing paths argument");
             multiroles.addServer(host, Integer.parseInt(port), paths);
-            return textResponse("server successfully added");
+            return textResponse("multirole server successfully added");
         });
 
         addHandler(Pattern.compile(Pattern.quote("/remove-multirole")), HttpMethod.POST, (req) -> {
@@ -151,7 +151,7 @@ public class AdminServer extends SimpleHttpServer {
                 host = "localhost";
             String port = (String) parse.get("port");
             multiroles.deleteServer(host, Integer.parseInt(port));
-            return textResponse("server successfully deleted");
+            return textResponse("multirole server successfully removed");
         });
 
         addHandler(Pattern.compile(Pattern.quote("/list-multiroles")), HttpMethod.GET, (req) -> {

@@ -21,7 +21,7 @@ public class Peers {
     public static final AttributeKey<Clients> CLIENTS_ATTRIBUTE = AttributeKey.newInstance("clients");
     public static final AttributeKey<Peers> PEERS_ATTRIBUTE = AttributeKey.newInstance("peers");
     public static final AttributeKey<String> PEERS_ID_ATTRIBUTE = AttributeKey.newInstance("peerId");
-    private JSONObject spec;
+    private JSONObject spec = new JSONObject();
     private HashMap<String, Peer> id2peers = new HashMap<>();
     private HashMap<String, Peer> uriToPeer = new HashMap<>();
 
