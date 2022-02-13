@@ -65,7 +65,7 @@ public class MultiroleChangeNotifier {
         else
             log.info("publishing multirole spec " + multirole);
         ByteBuf content = spec != null ? Unpooled.copiedBuffer(spec.jsonString, StandardCharsets.UTF_8): Unpooled.copiedBuffer(new byte[0]);
-        SimpleHttpClient.SimpleHttpClientRequest request = remoteProxyClient.request(HttpMethod.POST, RouterHandler.REGISTER_SPEC_URI, content);
+        SimpleHttpClient.SimpleHttpClientRequest request = remoteProxyClient.request(spec != null ? HttpMethod.POST : HttpMethod.DELETE, RouterHandler.REGISTER_SPEC_URI, content);
         if (spec != null)
             request.request.headers().add(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON);
         request.request.headers().add(HttpHeaderNames.CONTENT_LENGTH, content.readableBytes());

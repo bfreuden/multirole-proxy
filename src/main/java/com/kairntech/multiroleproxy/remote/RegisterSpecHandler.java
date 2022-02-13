@@ -47,9 +47,13 @@ public class RegisterSpecHandler extends ChannelInboundHandlerAdapter {
                                 X_MULTIROLE_SPEC_MD5_HEADER + "=" + specMd5 + " ");
                     } else {
                         try {
-                            OpenAPISpecParser.OpenAPISpec spec = OpenAPISpecParser.parse(request.content(), true);
-                            peers.declareSpec(proxyId, multiroleId, specMd5, spec);
-                            writeResponse(ctx, BAD_REQUEST, "done");
+                            if (request.method().equals(HttpMethod.POST)) {
+                                OpenAPISpecParser.OpenAPISpec spec = OpenAPISpecParser.parse(request.content());
+                                peers.declareSpec(proxyId, multiroleId, specMd5, spec);
+                                writeResponse(ctx, BAD_REQUEST, "done");
+                            } else {
+                                peers.undeclareSpec(proxyId, multiroleId);
+                            }
                         } catch (Exception ex) {
                             writeResponse(ctx, INTERNAL_SERVER_ERROR, ex.getClass().getName() + " " + ex.getMessage());
                         }

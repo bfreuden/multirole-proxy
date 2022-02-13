@@ -37,16 +37,21 @@ public class AdminServer extends SimpleHttpServer {
             String port = (String) parse.get("port");
             if (port == null)
                 throw new IllegalArgumentException("missing port argument");
+            String paths = (String) parse.get("paths");
+            if (paths == null)
+                throw new IllegalArgumentException("missing paths argument");
 //            String paths = (String) parse.get("paths");
 //            if (paths == null)
 //                throw new IllegalArgumentException("missing paths argument");
-            multiroles.addServer(host, Integer.parseInt(port));
+            multiroles.addServer(host, Integer.parseInt(port), paths);
             return textResponse("server successfully added");
         });
 
-        addHandler(Pattern.compile(Pattern.quote("/delete-multirole")), HttpMethod.POST, (req) -> {
+        addHandler(Pattern.compile(Pattern.quote("/remove-multirole")), HttpMethod.POST, (req) -> {
             JSONObject parse = parseJsonObjectBody(req);
             String host = (String)parse.get("host");
+            if (host == null)
+                host = "localhost";
             String port = (String) parse.get("port");
             multiroles.deleteServer(host, Integer.parseInt(port));
             return textResponse("server successfully deleted");
@@ -60,7 +65,7 @@ public class AdminServer extends SimpleHttpServer {
                 StringJoiner joiner = new StringJoiner("\r\n");
                 joiner.add("multirole servers:");
                 for (Multirole server : servers) {
-                    joiner.add("- " + server.getHost() + ":" + server.getPort() + " status: " + server.getStatus().name().replace('_', ' '));
+                    joiner.add("- " + server.getHost() + ":" + server.getPort() + " paths=" + server.getPaths() + " status: " + server.getStatus().name().replace('_', ' '));
                 }
                 joiner.add("");
                 return textResponse(joiner.toString());

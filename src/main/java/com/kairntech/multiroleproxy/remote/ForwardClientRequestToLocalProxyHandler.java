@@ -37,9 +37,9 @@ public class ForwardClientRequestToLocalProxyHandler extends ChannelInboundHandl
                     // find target peer
                     Peers peers = ctx.channel().attr(Peers.PEERS_ATTRIBUTE).get();
                     Pair<Peer, String> pair = peers.getPeerAndMultiroleID(request.uri());
-                    Peer peer = pair.first;
-                    request.headers().add(X_MULTIROLE_ID_HEADER, pair.second);
-                    if (peer != null) {
+                    if (pair != null) {
+                        Peer peer = pair.first;
+                        request.headers().add(X_MULTIROLE_ID_HEADER, pair.second);
                         sequencer = peer.getSequencer();
                         handlers = new Sequencer.ChannelHandlers(ctx.channel(), () -> write503Response(ctx, "connection lost with local proxy"), null);
                     }

@@ -8,7 +8,6 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpResponseDecoder;
 import io.netty.handler.codec.http.HttpResponseStatus;
 
 import java.util.Objects;
@@ -30,6 +29,7 @@ public class Multirole {
     private final String id;
     final String host;
     final int port;
+    private final String targetPathsRegex;
     private SimpleHttpClient multiroleClient;
     private volatile Status status = not_known_yet;
     private volatile String md5sum = "";
@@ -48,13 +48,13 @@ public class Multirole {
         return host + ":" + port;
     }
 
-
-    public Multirole(EventLoopGroup group, MultiroleChangeNotifier multiroleChangeNotifier, String host, int port) {
+    public Multirole(EventLoopGroup group, MultiroleChangeNotifier multiroleChangeNotifier, String host, int port, String targetPathsRegex) {
         this.multiroleChangeNotifier = multiroleChangeNotifier;
         this.id = getId(host, port);
         this.host = host;
         this.port = port;
         this.group = group;
+        this.targetPathsRegex = targetPathsRegex;
     }
 
     public void setSequencer(Sequencer sequencer) {
@@ -67,6 +67,10 @@ public class Multirole {
 
     public String getId() {
         return this.id;
+    }
+
+    public String getPaths() {
+        return targetPathsRegex;
     }
 
     public String getHost() {
@@ -98,7 +102,7 @@ public class Multirole {
                 FullHttpResponse response = handler.result();
                 if (response.status().equals(HttpResponseStatus.OK)) {
                     try {
-                        OpenAPISpecParser.OpenAPISpec spec = OpenAPISpecParser.parse(response.content(), false);
+                        OpenAPISpecParser.OpenAPISpec spec = OpenAPISpecParser.parse(response.content(), targetPathsRegex);
                         maybeLog(log, FINEST, () -> "fetched openapi spec successfully from  " + host + ":" + port);
                         status = Status.running;
                         String message = "unchanged";

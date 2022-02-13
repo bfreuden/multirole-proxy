@@ -24,12 +24,12 @@ public class Multiroles {
         this.multiroleChangeNotifier = multiroleChangeNotifier;
     }
 
-    public synchronized void addServer(String host, Integer port) {
+    public synchronized void addServer(String host, Integer port, String targetPathsRegex) {
         log.info("adding multirole server: " + host+ ":" + port);
         String id = Multirole.getId(host, port);
         if (servers.containsKey(id))
             throw new IllegalArgumentException("multirole already exists");
-        Multirole multirole = new Multirole(group, multiroleChangeNotifier, host, port);
+        Multirole multirole = new Multirole(group, multiroleChangeNotifier, host, port, targetPathsRegex);
         multirole.setSequencer(sequencer);
         servers.put(id, multirole);
         log.info("multirole server added: " + host+ ":" + port);
