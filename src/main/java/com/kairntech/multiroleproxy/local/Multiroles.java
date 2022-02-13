@@ -66,4 +66,9 @@ public class Multiroles {
     public Sequencer getSequencer() {
         return this.sequencer;
     }
+
+    public void redeclareServers() {
+        for (Multirole server : servers.values())
+            server.localProxyReconnected();
+    }
 }

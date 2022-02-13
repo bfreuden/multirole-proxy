@@ -33,6 +33,7 @@ public class Multirole {
     private SimpleHttpClient multiroleClient;
     private volatile Status status = not_known_yet;
     private volatile String md5sum = "";
+    private volatile OpenAPISpecParser.OpenAPISpec  spec;
     private Bootstrap bootstrap;
     private ScheduledFuture schedule;
     private Sequencer sequencer;
@@ -102,7 +103,7 @@ public class Multirole {
                 FullHttpResponse response = handler.result();
                 if (response.status().equals(HttpResponseStatus.OK)) {
                     try {
-                        OpenAPISpecParser.OpenAPISpec spec = OpenAPISpecParser.parse(response.content(), targetPathsRegex);
+                        spec = OpenAPISpecParser.parse(response.content(), targetPathsRegex);
                         maybeLog(log, FINEST, () -> "fetched openapi spec successfully from  " + host + ":" + port);
                         status = Status.running;
                         String message = "unchanged";
@@ -149,6 +150,10 @@ public class Multirole {
         multiroleChangeNotifier.notifyMultiroleDeleted(this);
     }
 
+    public void localProxyReconnected() {
+        if (status == Status.running && spec != null)
+            multiroleChangeNotifier.notifySpecChanged(this, spec);
+    }
 
     private void setupConnectionLostHandler() {
         bootstrap.connect(host, port).addListener((ChannelFutureListener) future -> {

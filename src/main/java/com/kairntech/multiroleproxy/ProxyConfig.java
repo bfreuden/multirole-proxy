@@ -1,8 +1,5 @@
 package com.kairntech.multiroleproxy;
 
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-
 public class ProxyConfig {
 
     private boolean ssl = false;
