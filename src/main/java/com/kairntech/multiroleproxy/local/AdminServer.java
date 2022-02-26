@@ -12,7 +12,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.*;
-import io.netty.handler.ssl.SslContext;
+//import io.netty.handler.ssl.SslContext;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 
@@ -36,7 +36,7 @@ public class AdminServer extends SimpleHttpServer {
     private final EventLoopGroup group;
     private final ProxyConfig config;
     private final MultiroleChangeNotifier multiroleChangeNotifier;
-    private final SslContext sslCtx;
+//    private final SslContext sslCtx;
     private final String id;
     private volatile Channel channel;
     private boolean displayErrorMessage = true;
@@ -46,13 +46,13 @@ public class AdminServer extends SimpleHttpServer {
     private volatile String connectReply = "";
     private long millisBeforeDisconnection;
 
-    public AdminServer(NioEventLoopGroup bossGroup, EventLoopGroup workerGroup, Multiroles multiroles, ProxyConfig config, MultiroleChangeNotifier multiroleChangeNotifier, SslContext sslCtx, String id) {
+    public AdminServer(NioEventLoopGroup bossGroup, EventLoopGroup workerGroup, Multiroles multiroles, ProxyConfig config, MultiroleChangeNotifier multiroleChangeNotifier/*, SslContext sslCtx*/, String id) {
         super(bossGroup, workerGroup);
         this.multiroles = multiroles;
         this.group = workerGroup;
         this.config = config;
         this.multiroleChangeNotifier = multiroleChangeNotifier;
-        this.sslCtx = sslCtx;
+//        this.sslCtx = sslCtx;
         this.id = id;
     }
 
@@ -217,7 +217,7 @@ public class AdminServer extends SimpleHttpServer {
             System.out.println("connecting to remote proxy at " + config.getHost() + ":" + config.getPort() + "...");
             b.group(group)
                     .channel(NioSocketChannel.class)
-                    .handler(new LocalProxyChannelInitializer(group, sslCtx, c -> {
+                    .handler(new LocalProxyChannelInitializer(group/*, sslCtx*/, c -> {
                         System.out.println("local proxy connected to remote proxy!");
                         displayErrorMessage = true;
                         channel = c;

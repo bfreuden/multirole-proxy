@@ -10,9 +10,9 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.*;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+//import io.netty.handler.ssl.SslContext;
+//import io.netty.handler.ssl.SslContextBuilder;
+//import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 
 import javax.net.ssl.SSLException;
 import java.net.ConnectException;
@@ -41,24 +41,24 @@ public class LocalProxy {
     }
 
     public synchronized void start() {
-        try {
-            final boolean ssl = config.isSsl();
-            final SslContext sslCtx;
-            if (ssl) {
-                sslCtx = SslContextBuilder.forClient()
-                        .trustManager(InsecureTrustManagerFactory.INSTANCE).build();
-            } else {
-                sslCtx = null;
-            }
+//        try {
+//            final boolean ssl = config.isSsl();
+//            final SslContext sslCtx;
+//            if (ssl) {
+//                sslCtx = SslContextBuilder.forClient()
+//                        .trustManager(InsecureTrustManagerFactory.INSTANCE).build();
+//            } else {
+//                sslCtx = null;
+//            }
             this.bossGroup = new NioEventLoopGroup(1);
             this.group = new NioEventLoopGroup();
             MultiroleChangeNotifier multiroleChangeNotifier = new MultiroleChangeNotifier(group, config, this.id);
             Multiroles multiroles = new Multiroles(group, multiroleChangeNotifier);
-            AdminServer adminServer = new AdminServer(bossGroup, group, multiroles, config, multiroleChangeNotifier, sslCtx, this.id);
+            AdminServer adminServer = new AdminServer(bossGroup, group, multiroles, config, multiroleChangeNotifier/*, sslCtx*/, this.id);
             adminServer.start();
-        } catch (SSLException e) {
-            throw new RuntimeException(e);
-        }
+//        } catch (SSLException e) {
+//            throw new RuntimeException(e);
+//        }
     }
 
     public void stop() {

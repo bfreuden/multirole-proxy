@@ -2,18 +2,18 @@ package com.kairntech.multiroleproxy;
 
 public class ProxyConfig {
 
-    private boolean ssl = false;
+//    private boolean ssl = false;
     private int port = 9080;
     private String host = "localhost";
 
-    public boolean isSsl() {
-        return ssl;
-    }
-
-    public ProxyConfig setSsl(boolean ssl) {
-        this.ssl = ssl;
-        return this;
-    }
+//    public boolean isSsl() {
+//        return ssl;
+//    }
+//
+//    public ProxyConfig setSsl(boolean ssl) {
+//        this.ssl = ssl;
+//        return this;
+//    }
 
     public int getPort() {
         return port;

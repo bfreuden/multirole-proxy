@@ -4,14 +4,14 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpClientCodec;
-import io.netty.handler.ssl.SslContext;
+//import io.netty.handler.ssl.SslContext;
 
 public class MultiroleForwardingClientChannelInitializer extends ChannelInitializer<SocketChannel> {
 
-    private final SslContext sslCtx;
+//    private final SslContext sslCtx;
 
-    public MultiroleForwardingClientChannelInitializer(SslContext sslCtx) {
-        this.sslCtx = sslCtx;
+    public MultiroleForwardingClientChannelInitializer(/*SslContext sslCtx*/) {
+//        this.sslCtx = sslCtx;
     }
 
     @Override
@@ -19,9 +19,9 @@ public class MultiroleForwardingClientChannelInitializer extends ChannelInitiali
         ChannelPipeline p = ch.pipeline();
 
         // Enable HTTPS if necessary.
-        if (sslCtx != null) {
-            p.addLast(sslCtx.newHandler(ch.alloc()));
-        }
+//        if (sslCtx != null) {
+//            p.addLast(sslCtx.newHandler(ch.alloc()));
+//        }
         ResponseTweakerHandler responseConnectionTweaker = new ResponseTweakerHandler();
         ResponseTweakerHandler.RequestTweakerHandler requestConnectionTweaker = responseConnectionTweaker.requestConnectionTweaker;
 

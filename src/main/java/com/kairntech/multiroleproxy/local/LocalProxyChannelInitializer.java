@@ -6,7 +6,7 @@ import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpContentDecompressor;
 import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
-import io.netty.handler.ssl.SslContext;
+//import io.netty.handler.ssl.SslContext;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 
@@ -18,15 +18,15 @@ import static com.kairntech.multiroleproxy.util.MaybeLog.maybeLogFinest;
 
 public class LocalProxyChannelInitializer extends ChannelInitializer<SocketChannel> {
 
-    private final SslContext sslCtx;
+//    private final SslContext sslCtx;
     private final Consumer<Channel> registrationCompleteCallback;
     private final EventLoopGroup group;
 
     private static final Logger log = Logger.getLogger(LocalProxyChannelInitializer.class.getSimpleName());
 
-    public LocalProxyChannelInitializer(EventLoopGroup group, SslContext sslCtx, Consumer<Channel> registrationCompleteCallback) {
+    public LocalProxyChannelInitializer(EventLoopGroup group/*, SslContext sslCtx*/, Consumer<Channel> registrationCompleteCallback) {
         this.group = group;
-        this.sslCtx = sslCtx;
+//        this.sslCtx = sslCtx;
         this.registrationCompleteCallback = registrationCompleteCallback;
     }
 

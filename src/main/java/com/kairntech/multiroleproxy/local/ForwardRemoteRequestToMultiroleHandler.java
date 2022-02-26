@@ -141,7 +141,7 @@ public class ForwardRemoteRequestToMultiroleHandler extends ChannelInboundHandle
         this.b = new Bootstrap()
                 .group(group)
                 .channel(NioSocketChannel.class)
-                .handler(new MultiroleForwardingClientChannelInitializer( null));
+                .handler(new MultiroleForwardingClientChannelInitializer( /*null*/));
     }
 
     @Override

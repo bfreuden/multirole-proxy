@@ -9,9 +9,9 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.handler.ssl.util.SelfSignedCertificate;
+//import io.netty.handler.ssl.SslContext;
+//import io.netty.handler.ssl.SslContextBuilder;
+//import io.netty.handler.ssl.util.SelfSignedCertificate;
 
 public final class RemoteProxy {
 
@@ -27,13 +27,13 @@ public final class RemoteProxy {
 
     public void start() throws Exception {
         // Configure SSL.
-        final SslContext sslCtx;
-        if (config.isSsl()) {
-            SelfSignedCertificate ssc = new SelfSignedCertificate();
-            sslCtx = SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey()).build();
-        } else {
-            sslCtx = null;
-        }
+//        final SslContext sslCtx;
+//        if (config.isSsl()) {
+//            SelfSignedCertificate ssc = new SelfSignedCertificate();
+//            sslCtx = SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey()).build();
+//        } else {
+//            sslCtx = null;
+//        }
         // Configure the server.
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup();
@@ -42,7 +42,7 @@ public final class RemoteProxy {
             b.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)
                     .handler(new LoggingHandler(LogLevel.INFO))
-                    .childHandler(new RemoteProxyChannelInitializer(sslCtx, peers, clients));
+                    .childHandler(new RemoteProxyChannelInitializer(/*sslCtx,*/ peers, clients));
 
             Channel ch = b.bind(config.getPort()).sync().channel();
 

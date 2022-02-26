@@ -5,7 +5,7 @@ import com.kairntech.multiroleproxy.util.Clients;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.*;
-import io.netty.handler.ssl.SslContext;
+//import io.netty.handler.ssl.SslContext;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -14,14 +14,14 @@ import static com.kairntech.multiroleproxy.util.MaybeLog.maybeLogFinest;
 
 public class RemoteProxyChannelInitializer extends ChannelInitializer<SocketChannel> {
 
-    private final SslContext sslCtx;
+//    private final SslContext sslCtx;
     private final Peers peers;
     private final Clients clients;
 
     private static final Logger log = Logger.getLogger( RemoteProxyChannelInitializer.class.getSimpleName());
 
-    public RemoteProxyChannelInitializer(SslContext sslCtx, Peers peers, Clients clients) {
-        this.sslCtx = sslCtx;
+    public RemoteProxyChannelInitializer(/*SslContext sslCtx,*/ Peers peers, Clients clients) {
+//        this.sslCtx = sslCtx;
         this.peers = peers;
         this.clients = clients;
     }

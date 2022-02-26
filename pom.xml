@@ -65,7 +65,50 @@
       <version>4.1.73.Final</version>
     </dependency>
   </dependencies>
-
+  <build>
+    <plugins>
+      <!-- <plugin> -->
+        <!-- <groupId>org.codehaus.mojo</groupId> -->
+        <!-- <artifactId>appassembler-maven-plugin</artifactId> -->
+        <!-- <version>1.10</version> -->
+		<!-- <executions> -->
+		  <!-- <execution> -->
+			<!-- <goals> -->
+			  <!-- <goal>assemble</goal> -->
+			<!-- </goals> -->
+			<!-- <phase>package</phase> -->
+		  <!-- </execution> -->
+		<!-- </executions> -->
+		<!-- <configuration> -->
+          <!-- <programs> -->
+            <!-- <program> -->
+              <!-- <mainClass>com.kairntech.multiroleproxy.Main</mainClass> -->
+              <!-- <id>multirole-proxy</id> -->
+            <!-- </program> -->
+          <!-- </programs> -->
+        <!-- </configuration> -->
+      <!-- </plugin> -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.2.4</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>com.kairntech.multiroleproxy.Main</mainClass>
+                </transformer>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>    </plugins>
+  </build>  
   <profiles>
     <profile>
       <id>native-compilation</id>
@@ -83,6 +126,8 @@ sdk install java 22.0.0.2.r17-grl
 sdk use java 22.0.0.2.r17-grl
 then run:
 gu install native-image
+then generate files in src/main/resources/META-INF/native-image with:
+java -agentlib:native-image-agent=config-output-dir=src/main/resources/META-INF/native-image -jar target\multirole-proxy-1.0-SNAPSHOT.jar local
 -->
         <plugins>
           <plugin>
@@ -100,7 +145,7 @@ gu install native-image
             <configuration>
               <imageName>${project.name}</imageName>    <!--(2)-->
               <mainClass>com.kairntech.multiroleproxy.Main</mainClass>  <!--(3)-->
-              <buildArgs>-H:+PrintClassInitialization -H:+ReportExceptionStackTraces</buildArgs> <!--(4)-->
+              <buildArgs>-H:+PrintClassInitialization --allow-incomplete-classpath --no-fallback -H:+ReportExceptionStackTraces --verbose --report-unsupported-elements-at-runtime</buildArgs> <!--(4)-->
             </configuration>
           </plugin>
 
